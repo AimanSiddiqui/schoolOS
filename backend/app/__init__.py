@@ -1,0 +1,2 @@
+"""SchoolOS backend package."""
+
