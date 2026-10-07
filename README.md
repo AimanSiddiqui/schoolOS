@@ -14,6 +14,8 @@ Milestones 0 through 2 are complete, and Milestone 3 has the academics/student d
 - CI workflow for backend and frontend checks.
 - School onboarding, login/logout, revocable cookie sessions, membership selection, and tenant-context checks.
 - Academic years, grade levels, sections, subjects, teacher assignments, students, guardians, guardian links, enrollments, scoped directory views, student search/filtering, profile details, edit, and deactivate.
+- Academic setup maintenance, including edit/deactivate flows for years, grade levels, sections, subjects, and teacher assignments.
+- Enrollment end-date/status edits and guardian-link relationship/portal edits.
 
 ## Requirements
 
@@ -108,10 +110,20 @@ Current Milestone 3 endpoints:
 
 - `GET /api/v1/academics/setup`
 - `POST /api/v1/academics/academic-years`
+- `PATCH /api/v1/academics/academic-years/{academic_year_id}`
+- `POST /api/v1/academics/academic-years/{academic_year_id}/deactivate`
 - `POST /api/v1/academics/grade-levels`
+- `PATCH /api/v1/academics/grade-levels/{grade_level_id}`
+- `POST /api/v1/academics/grade-levels/{grade_level_id}/deactivate`
 - `POST /api/v1/academics/sections`
+- `PATCH /api/v1/academics/sections/{section_id}`
+- `POST /api/v1/academics/sections/{section_id}/deactivate`
 - `POST /api/v1/academics/subjects`
+- `PATCH /api/v1/academics/subjects/{subject_id}`
+- `POST /api/v1/academics/subjects/{subject_id}/deactivate`
 - `POST /api/v1/academics/teacher-assignments`
+- `PATCH /api/v1/academics/teacher-assignments/{assignment_id}`
+- `POST /api/v1/academics/teacher-assignments/{assignment_id}/deactivate`
 - `GET /api/v1/students`
 - `POST /api/v1/students`
 - `GET /api/v1/students/{student_id}`
@@ -121,6 +133,8 @@ Current Milestone 3 endpoints:
 - `POST /api/v1/students/guardians`
 - `POST /api/v1/students/{student_id}/guardians`
 - `POST /api/v1/students/enrollments`
+- `PATCH /api/v1/students/enrollments/{enrollment_id}`
+- `PATCH /api/v1/students/guardian-links/{guardian_link_id}`
 - `GET /api/v1/students/users/teachers`
 
 Admins can create setup data and directory records. Teachers see students in assigned sections. Guardians see linked students only when portal access is enabled.

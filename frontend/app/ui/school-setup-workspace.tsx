@@ -13,12 +13,14 @@ type AcademicYear = {
   name: string;
   starts_on: string;
   ends_on: string;
+  status: string;
 };
 
 type GradeLevel = {
   id: string;
   label: string;
   sort_order: number;
+  status: string;
 };
 
 type Section = {
@@ -32,6 +34,7 @@ type Section = {
 type Subject = {
   id: string;
   name: string;
+  status: string;
 };
 
 type TeacherAssignment = {
@@ -148,6 +151,11 @@ function studentQueryFromForm(form: FormData): string {
   return query ? `?${query}` : "";
 }
 
+function submitIntent(event: FormEvent<HTMLFormElement>): string {
+  const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+  return submitter?.value ?? "update";
+}
+
 export function SchoolSetupWorkspace() {
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [setup, setSetup] = useState<SetupPayload>(emptySetup);
@@ -257,6 +265,125 @@ export function SchoolSetupWorkspace() {
     });
   }
 
+  async function saveAcademicYear(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const yearId = String(form.get("academic_year_id"));
+    if (submitIntent(event) === "deactivate") {
+      await submit(
+        "Deactivating academic year...",
+        `/academics/academic-years/${yearId}/deactivate`,
+        {},
+      );
+      return;
+    }
+    await submit(
+      "Updating academic year...",
+      `/academics/academic-years/${yearId}`,
+      {
+        name: form.get("name"),
+        starts_on: form.get("starts_on"),
+        ends_on: form.get("ends_on"),
+        status: form.get("status"),
+      },
+      undefined,
+      "PATCH",
+    );
+  }
+
+  async function saveGradeLevel(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const gradeLevelId = String(form.get("grade_level_id"));
+    if (submitIntent(event) === "deactivate") {
+      await submit(
+        "Deactivating grade level...",
+        `/academics/grade-levels/${gradeLevelId}/deactivate`,
+        {},
+      );
+      return;
+    }
+    await submit(
+      "Updating grade level...",
+      `/academics/grade-levels/${gradeLevelId}`,
+      {
+        label: form.get("label"),
+        sort_order: Number(form.get("sort_order")),
+        status: form.get("status"),
+      },
+      undefined,
+      "PATCH",
+    );
+  }
+
+  async function saveSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const sectionId = String(form.get("section_id"));
+    if (submitIntent(event) === "deactivate") {
+      await submit("Deactivating section...", `/academics/sections/${sectionId}/deactivate`, {});
+      return;
+    }
+    await submit(
+      "Updating section...",
+      `/academics/sections/${sectionId}`,
+      {
+        academic_year_id: form.get("academic_year_id"),
+        grade_level_id: form.get("grade_level_id"),
+        label: form.get("label"),
+        status: form.get("status"),
+      },
+      undefined,
+      "PATCH",
+    );
+  }
+
+  async function saveSubject(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const subjectId = String(form.get("subject_id"));
+    if (submitIntent(event) === "deactivate") {
+      await submit("Deactivating subject...", `/academics/subjects/${subjectId}/deactivate`, {});
+      return;
+    }
+    await submit(
+      "Updating subject...",
+      `/academics/subjects/${subjectId}`,
+      {
+        name: form.get("name"),
+        status: form.get("status"),
+      },
+      undefined,
+      "PATCH",
+    );
+  }
+
+  async function saveTeacherAssignment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const assignmentId = String(form.get("assignment_id"));
+    if (submitIntent(event) === "deactivate") {
+      await submit(
+        "Deactivating teacher assignment...",
+        `/academics/teacher-assignments/${assignmentId}/deactivate`,
+        {},
+      );
+      return;
+    }
+    await submit(
+      "Updating teacher assignment...",
+      `/academics/teacher-assignments/${assignmentId}`,
+      {
+        teacher_user_id: form.get("teacher_user_id"),
+        section_id: form.get("section_id"),
+        subject_id: form.get("subject_id") || null,
+        status: form.get("status"),
+      },
+      undefined,
+      "PATCH",
+    );
+  }
+
   async function createStudent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -356,6 +483,42 @@ export function SchoolSetupWorkspace() {
       section_id: form.get("section_id"),
       starts_on: form.get("starts_on"),
     });
+  }
+
+  async function updateEnrollment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const enrollmentId = String(form.get("enrollment_id"));
+    await submit(
+      "Updating enrollment...",
+      `/students/enrollments/${enrollmentId}`,
+      {
+        section_id: form.get("section_id"),
+        starts_on: form.get("starts_on"),
+        ends_on: form.get("ends_on") || null,
+        status: form.get("status"),
+      },
+      undefined,
+      "PATCH",
+    );
+  }
+
+  async function updateGuardianLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const guardianLinkId = String(form.get("guardian_link_id"));
+    await submit(
+      "Updating guardian link...",
+      `/students/guardian-links/${guardianLinkId}`,
+      {
+        relationship: form.get("relationship"),
+        portal_access: form.get("portal_access") === "on",
+        can_receive_notifications: form.get("can_receive_notifications") === "on",
+        emergency_contact: form.get("emergency_contact") === "on",
+      },
+      undefined,
+      "PATCH",
+    );
   }
 
   async function filterStudents(event: FormEvent<HTMLFormElement>) {
@@ -533,6 +696,300 @@ export function SchoolSetupWorkspace() {
             <button className="secondary-button" type="submit" disabled={busy || !isAdmin}>
               Assign
             </button>
+          </form>
+        </section>
+
+        <section
+          className="panel setup-panel maintenance-panel"
+          aria-labelledby="maintenance-heading"
+        >
+          <h3 id="maintenance-heading">Academic Maintenance</h3>
+          <form className="form-grid" onSubmit={saveAcademicYear}>
+            <label>
+              Year
+              <select name="academic_year_id" required defaultValue={firstId(setup.academic_years)}>
+                {setup.academic_years.map((year) => (
+                  <option key={year.id} value={year.id}>
+                    {year.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Name
+              <input name="name" defaultValue={setup.academic_years[0]?.name} required />
+            </label>
+            <label>
+              Starts
+              <input
+                name="starts_on"
+                type="date"
+                defaultValue={setup.academic_years[0]?.starts_on}
+                required
+              />
+            </label>
+            <label>
+              Ends
+              <input
+                name="ends_on"
+                type="date"
+                defaultValue={setup.academic_years[0]?.ends_on}
+                required
+              />
+            </label>
+            <label>
+              Status
+              <select name="status" defaultValue={setup.academic_years[0]?.status ?? "ACTIVE"}>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <div className="button-row">
+              <button
+                className="secondary-button"
+                type="submit"
+                value="update"
+                disabled={busy || !isAdmin}
+              >
+                Update
+              </button>
+              <button
+                className="danger-button"
+                type="submit"
+                value="deactivate"
+                disabled={busy || !isAdmin}
+              >
+                Deactivate
+              </button>
+            </div>
+          </form>
+
+          <form className="form-grid compact-form" onSubmit={saveGradeLevel}>
+            <label>
+              Grade
+              <select name="grade_level_id" required defaultValue={firstId(setup.grade_levels)}>
+                {setup.grade_levels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Label
+              <input name="label" defaultValue={setup.grade_levels[0]?.label} required />
+            </label>
+            <label>
+              Order
+              <input
+                name="sort_order"
+                type="number"
+                defaultValue={setup.grade_levels[0]?.sort_order ?? 0}
+                min="0"
+                required
+              />
+            </label>
+            <label>
+              Status
+              <select name="status" defaultValue={setup.grade_levels[0]?.status ?? "ACTIVE"}>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <div className="button-row">
+              <button
+                className="secondary-button"
+                type="submit"
+                value="update"
+                disabled={busy || !isAdmin}
+              >
+                Update
+              </button>
+              <button
+                className="danger-button"
+                type="submit"
+                value="deactivate"
+                disabled={busy || !isAdmin}
+              >
+                Deactivate
+              </button>
+            </div>
+          </form>
+
+          <form className="form-grid compact-form" onSubmit={saveSection}>
+            <label>
+              Section
+              <select name="section_id" required defaultValue={firstSectionId}>
+                {setup.sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Year
+              <select name="academic_year_id" required defaultValue={firstId(setup.academic_years)}>
+                {setup.academic_years.map((year) => (
+                  <option key={year.id} value={year.id}>
+                    {year.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Grade
+              <select name="grade_level_id" required defaultValue={firstId(setup.grade_levels)}>
+                {setup.grade_levels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Label
+              <input name="label" defaultValue={setup.sections[0]?.label} required />
+            </label>
+            <label>
+              Status
+              <select name="status" defaultValue={setup.sections[0]?.status ?? "ACTIVE"}>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <div className="button-row">
+              <button
+                className="secondary-button"
+                type="submit"
+                value="update"
+                disabled={busy || !isAdmin}
+              >
+                Update
+              </button>
+              <button
+                className="danger-button"
+                type="submit"
+                value="deactivate"
+                disabled={busy || !isAdmin}
+              >
+                Deactivate
+              </button>
+            </div>
+          </form>
+
+          <form className="form-grid compact-form" onSubmit={saveSubject}>
+            <label>
+              Subject
+              <select name="subject_id" required defaultValue={firstId(setup.subjects)}>
+                {setup.subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Name
+              <input name="name" defaultValue={setup.subjects[0]?.name} required />
+            </label>
+            <label>
+              Status
+              <select name="status" defaultValue={setup.subjects[0]?.status ?? "ACTIVE"}>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <div className="button-row">
+              <button
+                className="secondary-button"
+                type="submit"
+                value="update"
+                disabled={busy || !isAdmin}
+              >
+                Update
+              </button>
+              <button
+                className="danger-button"
+                type="submit"
+                value="deactivate"
+                disabled={busy || !isAdmin}
+              >
+                Deactivate
+              </button>
+            </div>
+          </form>
+
+          <form className="form-grid compact-form" onSubmit={saveTeacherAssignment}>
+            <label>
+              Assignment
+              <select
+                name="assignment_id"
+                required
+                defaultValue={firstId(setup.teacher_assignments)}
+              >
+                {setup.teacher_assignments.map((assignment) => (
+                  <option key={assignment.id} value={assignment.id}>
+                    {assignment.id.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Teacher
+              <select name="teacher_user_id" required defaultValue={firstId(teachers)}>
+                {teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Section
+              <select name="section_id" required defaultValue={firstSectionId}>
+                {setup.sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Subject
+              <select name="subject_id" defaultValue={firstId(setup.subjects)}>
+                {setup.subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Status
+              <select name="status" defaultValue={setup.teacher_assignments[0]?.status ?? "ACTIVE"}>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <div className="button-row">
+              <button
+                className="secondary-button"
+                type="submit"
+                value="update"
+                disabled={busy || !isAdmin}
+              >
+                Update
+              </button>
+              <button
+                className="danger-button"
+                type="submit"
+                value="deactivate"
+                disabled={busy || !isAdmin}
+              >
+                Deactivate
+              </button>
+            </div>
           </form>
         </section>
 
@@ -807,6 +1264,110 @@ export function SchoolSetupWorkspace() {
                   )}
                 </div>
               </div>
+
+              {selectedStudent.enrollments[0] ? (
+                <form
+                  key={`enrollment-${selectedStudent.enrollments[0].id}`}
+                  className="form-grid compact-form"
+                  onSubmit={updateEnrollment}
+                >
+                  <input
+                    name="enrollment_id"
+                    type="hidden"
+                    value={selectedStudent.enrollments[0].id}
+                  />
+                  <label>
+                    Enrollment section
+                    <select
+                      name="section_id"
+                      required
+                      defaultValue={selectedStudent.enrollments[0].section_id}
+                    >
+                      {setup.sections.map((section) => (
+                        <option key={section.id} value={section.id}>
+                          {section.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Starts
+                    <input
+                      name="starts_on"
+                      type="date"
+                      defaultValue={selectedStudent.enrollments[0].starts_on}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Ends
+                    <input
+                      name="ends_on"
+                      type="date"
+                      defaultValue={selectedStudent.enrollments[0].ends_on ?? ""}
+                    />
+                  </label>
+                  <label>
+                    Status
+                    <select name="status" defaultValue={selectedStudent.enrollments[0].status}>
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                    </select>
+                  </label>
+                  <button className="secondary-button" type="submit" disabled={busy || !isAdmin}>
+                    Update enrollment
+                  </button>
+                </form>
+              ) : null}
+
+              {selectedStudent.guardian_links[0] ? (
+                <form
+                  key={`guardian-${selectedStudent.guardian_links[0].id}`}
+                  className="form-grid compact-form"
+                  onSubmit={updateGuardianLink}
+                >
+                  <input
+                    name="guardian_link_id"
+                    type="hidden"
+                    value={selectedStudent.guardian_links[0].id}
+                  />
+                  <label>
+                    Relationship
+                    <input
+                      name="relationship"
+                      defaultValue={selectedStudent.guardian_links[0].relationship}
+                      required
+                    />
+                  </label>
+                  <label className="checkbox-row">
+                    <input
+                      name="portal_access"
+                      type="checkbox"
+                      defaultChecked={selectedStudent.guardian_links[0].portal_access}
+                    />
+                    Portal access
+                  </label>
+                  <label className="checkbox-row">
+                    <input
+                      name="can_receive_notifications"
+                      type="checkbox"
+                      defaultChecked={selectedStudent.guardian_links[0].can_receive_notifications}
+                    />
+                    Notifications
+                  </label>
+                  <label className="checkbox-row">
+                    <input
+                      name="emergency_contact"
+                      type="checkbox"
+                      defaultChecked={selectedStudent.guardian_links[0].emergency_contact}
+                    />
+                    Emergency contact
+                  </label>
+                  <button className="secondary-button" type="submit" disabled={busy || !isAdmin}>
+                    Update guardian link
+                  </button>
+                </form>
+              ) : null}
             </>
           ) : (
             <p className="muted">Create or select a student to view the profile.</p>

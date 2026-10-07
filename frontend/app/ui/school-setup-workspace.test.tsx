@@ -18,9 +18,15 @@ const teacherSession = {
 
 const setupPayload = {
   academic_years: [
-    { id: "year-1", name: "2026-2027", starts_on: "2026-09-01", ends_on: "2027-07-15" },
+    {
+      id: "year-1",
+      name: "2026-2027",
+      starts_on: "2026-09-01",
+      ends_on: "2027-07-15",
+      status: "ACTIVE",
+    },
   ],
-  grade_levels: [{ id: "level-1", label: "Grade 1", sort_order: 1 }],
+  grade_levels: [{ id: "level-1", label: "Grade 1", sort_order: 1, status: "ACTIVE" }],
   sections: [
     {
       id: "section-1",
@@ -30,7 +36,7 @@ const setupPayload = {
       status: "ACTIVE",
     },
   ],
-  subjects: [{ id: "subject-1", name: "Homeroom" }],
+  subjects: [{ id: "subject-1", name: "Homeroom", status: "ACTIVE" }],
   teacher_assignments: [],
 };
 
@@ -125,7 +131,7 @@ describe("SchoolSetupWorkspace", () => {
     expect(within(directory).getByText("S-001")).toBeInTheDocument();
     const profile = screen.getByRole("region", { name: "Student Profile" });
     expect(within(profile).getByText("Nadia Stone")).toBeInTheDocument();
-    expect(within(profile).getByText("1A")).toBeInTheDocument();
+    expect(within(profile).getAllByText("1A")).not.toHaveLength(0);
   });
 
   it("submits academic year creation through the API", async () => {
@@ -249,6 +255,105 @@ describe("SchoolSetupWorkspace", () => {
       expect(JSON.parse(String(updateCall?.[1]?.body))).toMatchObject({
         student_number: "S-010",
         family_name: "Santos",
+      });
+    });
+  });
+
+  it("submits academic maintenance, enrollment, and guardian-link edits", async () => {
+    const fetchMock = mockFetch((url, init) => {
+      if (url === "/api/backend/auth/session") {
+        return jsonResponse(adminSession);
+      }
+      if (url === "/api/backend/academics/setup") {
+        return jsonResponse(setupPayload);
+      }
+      if (url === "/api/backend/students/users/teachers") {
+        return jsonResponse([{ id: "teacher-1", display_name: "Tariq Teacher", email: "t@test" }]);
+      }
+      if (url === "/api/backend/students/guardians") {
+        return jsonResponse(guardiansPayload);
+      }
+      if (url === "/api/backend/students") {
+        return jsonResponse(studentsPayload);
+      }
+      if (url === "/api/backend/academics/academic-years/year-1" && init?.method === "PATCH") {
+        return jsonResponse({ ...setupPayload.academic_years[0], name: "2026-27" });
+      }
+      if (url === "/api/backend/students/enrollments/enrollment-1" && init?.method === "PATCH") {
+        return jsonResponse({
+          ...studentsPayload[0].enrollments[0],
+          ends_on: "2026-12-31",
+        });
+      }
+      if (
+        url === "/api/backend/students/guardian-links/guardian-link-1" &&
+        init?.method === "PATCH"
+      ) {
+        return jsonResponse({
+          ...studentsPayload[0],
+          guardian_links: [{ ...studentsPayload[0].guardian_links[0], relationship: "Aunt" }],
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+
+    render(<SchoolSetupWorkspace />);
+
+    await screen.findByText("Setup loaded.");
+    const maintenance = screen.getByRole("region", { name: "Academic Maintenance" });
+    fireEvent.change(within(maintenance).getAllByLabelText("Name")[0], {
+      target: { value: "2026-27" },
+    });
+    fireEvent.submit(
+      within(maintenance).getAllByLabelText("Name")[0].closest("form") as HTMLFormElement,
+    );
+
+    await waitFor(() => {
+      const updateYearCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          url === "/api/backend/academics/academic-years/year-1" && init?.method === "PATCH",
+      );
+      expect(updateYearCall).toBeDefined();
+      expect(JSON.parse(String(updateYearCall?.[1]?.body))).toMatchObject({
+        name: "2026-27",
+      });
+    });
+
+    const profile = screen.getByRole("region", { name: "Student Profile" });
+    fireEvent.change(within(profile).getByLabelText("Ends"), {
+      target: { value: "2026-12-31" },
+    });
+    fireEvent.submit(
+      within(profile).getByText("Update enrollment").closest("form") as HTMLFormElement,
+    );
+
+    await waitFor(() => {
+      const updateEnrollmentCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          url === "/api/backend/students/enrollments/enrollment-1" && init?.method === "PATCH",
+      );
+      expect(updateEnrollmentCall).toBeDefined();
+      expect(JSON.parse(String(updateEnrollmentCall?.[1]?.body))).toMatchObject({
+        ends_on: "2026-12-31",
+      });
+    });
+
+    fireEvent.change(within(profile).getByLabelText("Relationship"), {
+      target: { value: "Aunt" },
+    });
+    fireEvent.submit(
+      within(profile).getByText("Update guardian link").closest("form") as HTMLFormElement,
+    );
+
+    await waitFor(() => {
+      const updateLinkCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          url === "/api/backend/students/guardian-links/guardian-link-1" &&
+          init?.method === "PATCH",
+      );
+      expect(updateLinkCall).toBeDefined();
+      expect(JSON.parse(String(updateLinkCall?.[1]?.body))).toMatchObject({
+        relationship: "Aunt",
       });
     });
   });

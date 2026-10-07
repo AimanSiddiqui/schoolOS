@@ -83,6 +83,13 @@ class StudentGuardianCreate(BaseModel):
     emergency_contact: bool = False
 
 
+class StudentGuardianUpdate(BaseModel):
+    relationship: str | None = Field(default=None, min_length=1, max_length=80)
+    portal_access: bool | None = None
+    can_receive_notifications: bool | None = None
+    emergency_contact: bool | None = None
+
+
 class EnrollmentCreate(BaseModel):
     student_id: UUID
     section_id: UUID
@@ -92,5 +99,19 @@ class EnrollmentCreate(BaseModel):
     @model_validator(mode="after")
     def validate_dates(self) -> "EnrollmentCreate":
         if self.ends_on is not None and self.ends_on < self.starts_on:
+            raise ValueError("Enrollment end date must be on or after the start date")
+        return self
+
+
+class EnrollmentUpdate(BaseModel):
+    section_id: UUID | None = None
+    starts_on: date | None = None
+    ends_on: date | None = None
+    status: str | None = Field(default=None, min_length=1, max_length=32)
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "EnrollmentUpdate":
+        has_both_dates = self.starts_on is not None and self.ends_on is not None
+        if has_both_dates and self.ends_on < self.starts_on:
             raise ValueError("Enrollment end date must be on or after the start date")
         return self

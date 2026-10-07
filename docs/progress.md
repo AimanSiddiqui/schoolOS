@@ -2,7 +2,7 @@
 
 ## Current State
 
-Milestones 0 through 2 are complete. Milestone 3 now has a tested academics and student directory/profile slice.
+Milestones 0 through 2 are complete. Milestone 3 now has a tested academics, maintenance, and student directory/profile slice.
 The repository was empty when inspected:
 
 - No existing application source files.
@@ -96,21 +96,26 @@ Completed slice:
 - Added student profile panel with enrollment and guardian details.
 - Added student update and deactivate flows.
 - Added selectable guardian linking from API-loaded guardians.
-- Added backend tests for full admin setup flow, cross-school rejection, teacher scoping, guardian scoping, search/filter/profile/update/deactivate.
-- Added frontend tests for setup loading, academic year submit, non-admin blocking, directory filtering, and student update.
+- Added academic setup edit/deactivate flows for academic years, grade levels, sections, subjects,
+  and teacher assignments.
+- Added enrollment end-date/status editing and guardian-link relationship/portal editing.
+- Added `0004_academic_statuses` migration so academic setup records can be deactivated without
+  hard deletion.
+- Added backend tests for full admin setup flow, cross-school rejection, teacher scoping, guardian scoping, search/filter/profile/update/deactivate, academic maintenance, enrollment editing, and guardian-link editing.
+- Added frontend tests for setup loading, academic year submit, non-admin blocking, directory filtering, student update, academic maintenance, enrollment update, and guardian-link update.
 
 Remaining Milestone 3 work:
 
-- Academic setup record edit/deactivate flows for sections, subjects, grade levels, academic years, and teacher assignments.
-- More complete student lifecycle polish, including enrollment end dates and guardian-link editing.
 - Optional browser E2E coverage for the admin setup journey.
+- More ergonomic multi-record editing for schools with many years, sections, assignments, guardians,
+  and enrollments.
 
 Local checks completed:
 
 - `backend/.venv/Scripts/python.exe -m ruff check .`: passed.
-- `backend/.venv/Scripts/python.exe -m pytest`: passed, 13 tests, 1 upstream deprecation warning from FastAPI/Starlette TestClient.
+- `backend/.venv/Scripts/python.exe -m pytest`: passed, 14 tests, 1 upstream deprecation warning from FastAPI/Starlette TestClient.
 - `frontend npm run lint`: passed.
-- `frontend npm run test`: passed, 8 tests.
+- `frontend npm run test`: passed, 9 tests.
 - `frontend npm run typecheck`: passed.
 - `frontend npm run build`: passed.
 
@@ -155,9 +160,7 @@ Local checks completed:
 
 ## Next Implementation Step
 
-Finish Milestone 3 polish or move into Milestone 4:
+Move into Milestone 4 after optional browser E2E coverage:
 
-- Add edit/deactivate flows for academic setup records and teacher assignments.
-- Add enrollment end-date editing and guardian-link editing.
 - Add a browser E2E demo for the admin setup and student profile workflow.
 - Start the attendance vertical slice once the remaining directory polish is acceptable.

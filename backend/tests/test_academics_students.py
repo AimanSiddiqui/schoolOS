@@ -261,6 +261,92 @@ def test_cross_school_references_are_rejected(
     assert cross_enrollment.status_code == 400
 
 
+def test_admin_updates_and_deactivates_academic_setup_records(
+    api: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, session_factory = api
+    with db_session(session_factory) as db:
+        school, teacher = create_member(
+            db,
+            school_name="Academic Edit School",
+            email="teacher@schoolos.local",
+            role="TEACHER",
+        )
+        admin = User(
+            email="admin@schoolos.local",
+            display_name="Admin",
+            password_hash=hash_password("schoolos-password"),
+        )
+        db.add_all([admin, SchoolMembership(school=school, user=admin, role="ADMIN")])
+        db.commit()
+        year, level, section, subject = create_academic_fixture(db, school)
+        assignment = TeacherAssignment(
+            school_id=school.id,
+            teacher_user_id=teacher.id,
+            section_id=section.id,
+            subject_id=subject.id,
+        )
+        db.add(assignment)
+        db.commit()
+        year_id = str(year.id)
+        level_id = str(level.id)
+        section_id = str(section.id)
+        subject_id = str(subject.id)
+        assignment_id = str(assignment.id)
+
+    login(client, "admin@schoolos.local")
+
+    updated_year = client.patch(
+        f"/api/v1/academics/academic-years/{year_id}",
+        json={"name": "2026-27", "ends_on": "2027-07-20"},
+    )
+    assert updated_year.status_code == 200
+    assert updated_year.json()["name"] == "2026-27"
+    assert updated_year.json()["status"] == "ACTIVE"
+
+    updated_level = client.patch(
+        f"/api/v1/academics/grade-levels/{level_id}",
+        json={"label": "Grade One", "sort_order": 2},
+    )
+    assert updated_level.status_code == 200
+    assert updated_level.json()["label"] == "Grade One"
+    deactivated_level = client.post(f"/api/v1/academics/grade-levels/{level_id}/deactivate")
+    assert deactivated_level.status_code == 200
+    assert deactivated_level.json()["status"] == "INACTIVE"
+
+    updated_section = client.patch(
+        f"/api/v1/academics/sections/{section_id}",
+        json={"label": "1B"},
+    )
+    assert updated_section.status_code == 200
+    assert updated_section.json()["label"] == "1B"
+
+    updated_subject = client.patch(
+        f"/api/v1/academics/subjects/{subject_id}",
+        json={"name": "Mathematics"},
+    )
+    assert updated_subject.status_code == 200
+    assert updated_subject.json()["name"] == "Mathematics"
+    deactivated_subject = client.post(f"/api/v1/academics/subjects/{subject_id}/deactivate")
+    assert deactivated_subject.status_code == 200
+    assert deactivated_subject.json()["status"] == "INACTIVE"
+
+    updated_assignment = client.patch(
+        f"/api/v1/academics/teacher-assignments/{assignment_id}",
+        json={"status": "INACTIVE"},
+    )
+    assert updated_assignment.status_code == 200
+    assert updated_assignment.json()["status"] == "INACTIVE"
+
+    deactivated_section = client.post(f"/api/v1/academics/sections/{section_id}/deactivate")
+    assert deactivated_section.status_code == 200
+    assert deactivated_section.json()["status"] == "INACTIVE"
+
+    deactivated_year = client.post(f"/api/v1/academics/academic-years/{year_id}/deactivate")
+    assert deactivated_year.status_code == 200
+    assert deactivated_year.json()["status"] == "INACTIVE"
+
+
 def test_teacher_sees_only_assigned_students(api: tuple[TestClient, sessionmaker[Session]]) -> None:
     client, session_factory = api
     with db_session(session_factory) as db:
@@ -432,6 +518,26 @@ def test_admin_filters_views_updates_and_deactivates_students(
     assert profile.json()["enrollments"][0]["section_label"] == "1A"
     assert profile.json()["enrollments"][0]["grade_label"] == "Grade 1"
     assert profile.json()["guardian_links"][0]["guardian_display_name"] == "Mara Marks"
+    enrollment_id = profile.json()["enrollments"][0]["id"]
+    guardian_link_id = profile.json()["guardian_links"][0]["id"]
+
+    updated_enrollment = client.patch(
+        f"/api/v1/students/enrollments/{enrollment_id}",
+        json={"ends_on": "2026-12-31", "status": "INACTIVE"},
+    )
+    assert updated_enrollment.status_code == 200
+    assert updated_enrollment.json()["ends_on"] == "2026-12-31"
+    assert updated_enrollment.json()["status"] == "INACTIVE"
+
+    updated_link = client.patch(
+        f"/api/v1/students/guardian-links/{guardian_link_id}",
+        json={"relationship": "Aunt", "portal_access": False, "emergency_contact": True},
+    )
+    assert updated_link.status_code == 200
+    link_payload = updated_link.json()["guardian_links"][0]
+    assert link_payload["relationship"] == "Aunt"
+    assert link_payload["portal_access"] is False
+    assert link_payload["emergency_contact"] is True
 
     updated = client.patch(
         f"/api/v1/students/{student_a_id}",

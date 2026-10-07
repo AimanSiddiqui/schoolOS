@@ -21,10 +21,12 @@ from app.identity.dependencies import SchoolContext, require_school_context
 from app.students.schemas import (
     EnrollmentCreate,
     EnrollmentRead,
+    EnrollmentUpdate,
     GuardianCreate,
     GuardianRead,
     StudentCreate,
     StudentGuardianCreate,
+    StudentGuardianUpdate,
     StudentRead,
     StudentUpdate,
 )
@@ -44,26 +46,38 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
+def normalized_status(value: str) -> str:
+    normalized = value.strip().upper()
+    if normalized not in {"ACTIVE", "INACTIVE"}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Status must be ACTIVE or INACTIVE",
+        )
+    return normalized
+
+
+def serialize_enrollment(enrollment: Enrollment) -> dict[str, object]:
+    section = enrollment.section
+    grade_level = section.grade_level if section is not None else None
+    academic_year = section.academic_year if section is not None else None
+    return {
+        "id": enrollment.id,
+        "section_id": enrollment.section_id,
+        "section_label": section.label if section is not None else None,
+        "grade_level_id": section.grade_level_id if section is not None else None,
+        "grade_label": grade_level.label if grade_level is not None else None,
+        "academic_year_id": section.academic_year_id if section is not None else None,
+        "academic_year_name": academic_year.name if academic_year is not None else None,
+        "starts_on": enrollment.starts_on,
+        "ends_on": enrollment.ends_on,
+        "status": enrollment.status,
+    }
+
+
 def serialize_student(student: Student) -> dict[str, object]:
     enrollments = []
     for enrollment in sorted(student.enrollments, key=lambda item: item.starts_on, reverse=True):
-        section = enrollment.section
-        grade_level = section.grade_level if section is not None else None
-        academic_year = section.academic_year if section is not None else None
-        enrollments.append(
-            {
-                "id": enrollment.id,
-                "section_id": enrollment.section_id,
-                "section_label": section.label if section is not None else None,
-                "grade_level_id": section.grade_level_id if section is not None else None,
-                "grade_label": grade_level.label if grade_level is not None else None,
-                "academic_year_id": section.academic_year_id if section is not None else None,
-                "academic_year_name": academic_year.name if academic_year is not None else None,
-                "starts_on": enrollment.starts_on,
-                "ends_on": enrollment.ends_on,
-                "status": enrollment.status,
-            }
-        )
+        enrollments.append(serialize_enrollment(enrollment))
 
     guardian_links = []
     for link in sorted(student.guardian_links, key=lambda item: item.created_at):
@@ -111,6 +125,37 @@ def load_student_for_school(db: Session, student_id: UUID, school_id: UUID) -> S
     if student is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
     return student
+
+
+def load_enrollment_for_school(db: Session, enrollment_id: UUID, school_id: UUID) -> Enrollment:
+    enrollment = db.scalar(
+        select(Enrollment)
+        .where(Enrollment.id == enrollment_id, Enrollment.school_id == school_id)
+        .options(
+            selectinload(Enrollment.section).selectinload(Section.grade_level),
+            selectinload(Enrollment.section).selectinload(Section.academic_year),
+        )
+        .execution_options(populate_existing=True)
+    )
+    if enrollment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enrollment not found")
+    return enrollment
+
+
+def load_guardian_link_for_school(
+    db: Session,
+    guardian_link_id: UUID,
+    school_id: UUID,
+) -> StudentGuardian:
+    link = db.scalar(
+        select(StudentGuardian)
+        .where(StudentGuardian.id == guardian_link_id, StudentGuardian.school_id == school_id)
+        .options(selectinload(StudentGuardian.guardian), selectinload(StudentGuardian.student))
+        .execution_options(populate_existing=True)
+    )
+    if link is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guardian link not found")
+    return link
 
 
 def accessible_student_ids(db: Session, context: SchoolContext) -> set[UUID] | None:
@@ -326,13 +371,7 @@ def update_student(
     if payload.family_name is not None:
         student.family_name = payload.family_name.strip()
     if payload.status is not None:
-        status_value = payload.status.strip().upper()
-        if status_value not in {"ACTIVE", "INACTIVE"}:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Student status must be ACTIVE or INACTIVE",
-            )
-        student.status = status_value
+        student.status = normalized_status(payload.status)
     commit_or_conflict(db, "Student number already exists for this school")
     return serialize_student(load_student_for_school(db, student.id, context.school.id))
 
@@ -384,7 +423,7 @@ def create_enrollment(
     payload: EnrollmentCreate,
     context: SchoolContext = Depends(require_admin),
     db: Session = Depends(get_db),
-) -> Enrollment:
+) -> dict[str, object]:
     load_student_for_school(db, payload.student_id, context.school.id)
     get_school_owned(db, Section, payload.section_id, context.school.id)
     enrollment = Enrollment(
@@ -397,4 +436,50 @@ def create_enrollment(
     db.add(enrollment)
     commit_or_conflict(db, "Enrollment already exists for this student, section, and start date")
     db.refresh(enrollment)
-    return enrollment
+    return serialize_enrollment(load_enrollment_for_school(db, enrollment.id, context.school.id))
+
+
+@router.patch("/enrollments/{enrollment_id}", response_model=EnrollmentRead)
+def update_enrollment(
+    enrollment_id: UUID,
+    payload: EnrollmentUpdate,
+    context: SchoolContext = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, object]:
+    enrollment = load_enrollment_for_school(db, enrollment_id, context.school.id)
+    starts_on = payload.starts_on if payload.starts_on is not None else enrollment.starts_on
+    ends_on = payload.ends_on if payload.ends_on is not None else enrollment.ends_on
+    if ends_on is not None and ends_on < starts_on:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Enrollment end date must be on or after the start date",
+        )
+    if payload.section_id is not None:
+        get_school_owned(db, Section, payload.section_id, context.school.id)
+        enrollment.section_id = payload.section_id
+    enrollment.starts_on = starts_on
+    enrollment.ends_on = ends_on
+    if payload.status is not None:
+        enrollment.status = normalized_status(payload.status)
+    commit_or_conflict(db, "Enrollment already exists for this student, section, and start date")
+    return serialize_enrollment(load_enrollment_for_school(db, enrollment.id, context.school.id))
+
+
+@router.patch("/guardian-links/{guardian_link_id}", response_model=StudentRead)
+def update_guardian_link(
+    guardian_link_id: UUID,
+    payload: StudentGuardianUpdate,
+    context: SchoolContext = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, object]:
+    link = load_guardian_link_for_school(db, guardian_link_id, context.school.id)
+    if payload.relationship is not None:
+        link.relationship = payload.relationship.strip()
+    if payload.portal_access is not None:
+        link.portal_access = payload.portal_access
+    if payload.can_receive_notifications is not None:
+        link.can_receive_notifications = payload.can_receive_notifications
+    if payload.emergency_contact is not None:
+        link.emergency_contact = payload.emergency_contact
+    db.commit()
+    return serialize_student(load_student_for_school(db, link.student_id, context.school.id))
