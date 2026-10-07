@@ -358,3 +358,94 @@ def test_guardian_sees_only_linked_portal_students(
     assert [item["student_number"] for item in directory.json()] == ["G-001"]
     forbidden = client.get(f"/api/v1/students/{student_hidden.id}")
     assert forbidden.status_code == 403
+
+
+def test_admin_filters_views_updates_and_deactivates_students(
+    api: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, session_factory = api
+    with db_session(session_factory) as db:
+        school, _admin = create_member(
+            db,
+            school_name="Directory School",
+            email="admin@schoolos.local",
+            role="ADMIN",
+        )
+        _year, level, section, _subject = create_academic_fixture(db, school)
+        student_a = Student(
+            school_id=school.id,
+            student_number="D-001",
+            given_name="Mina",
+            family_name="Marks",
+        )
+        student_b = Student(
+            school_id=school.id,
+            student_number="D-002",
+            given_name="Zaid",
+            family_name="Zimmer",
+        )
+        guardian = Guardian(
+            school_id=school.id,
+            display_name="Mara Marks",
+            email="mara@example.test",
+        )
+        db.add_all([student_a, student_b, guardian])
+        db.flush()
+        db.add_all(
+            [
+                Enrollment(
+                    school_id=school.id,
+                    student_id=student_a.id,
+                    section_id=section.id,
+                    starts_on=date(2026, 9, 1),
+                ),
+                StudentGuardian(
+                    school_id=school.id,
+                    student_id=student_a.id,
+                    guardian_id=guardian.id,
+                    relationship="Mother",
+                    portal_access=True,
+                ),
+            ]
+        )
+        db.commit()
+        student_a_id = str(student_a.id)
+        section_id = str(section.id)
+        level_id = str(level.id)
+
+    login(client, "admin@schoolos.local")
+
+    searched = client.get("/api/v1/students", params={"q": "mina"})
+    assert searched.status_code == 200
+    assert [item["student_number"] for item in searched.json()] == ["D-001"]
+
+    section_filtered = client.get("/api/v1/students", params={"section_id": section_id})
+    assert section_filtered.status_code == 200
+    assert [item["student_number"] for item in section_filtered.json()] == ["D-001"]
+
+    grade_filtered = client.get("/api/v1/students", params={"grade_level_id": level_id})
+    assert grade_filtered.status_code == 200
+    assert [item["student_number"] for item in grade_filtered.json()] == ["D-001"]
+
+    profile = client.get(f"/api/v1/students/{student_a_id}")
+    assert profile.status_code == 200
+    assert profile.json()["enrollments"][0]["section_label"] == "1A"
+    assert profile.json()["enrollments"][0]["grade_label"] == "Grade 1"
+    assert profile.json()["guardian_links"][0]["guardian_display_name"] == "Mara Marks"
+
+    updated = client.patch(
+        f"/api/v1/students/{student_a_id}",
+        json={"student_number": "D-010", "given_name": "Mina", "family_name": "Miles"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["student_number"] == "D-010"
+    assert updated.json()["family_name"] == "Miles"
+
+    deactivated = client.post(f"/api/v1/students/{student_a_id}/deactivate")
+    assert deactivated.status_code == 200
+    assert deactivated.json()["status"] == "INACTIVE"
+    assert deactivated.json()["enrollments"][0]["status"] == "INACTIVE"
+
+    active_only = client.get("/api/v1/students", params={"status_filter": "ACTIVE"})
+    assert active_only.status_code == 200
+    assert [item["student_number"] for item in active_only.json()] == ["D-002"]

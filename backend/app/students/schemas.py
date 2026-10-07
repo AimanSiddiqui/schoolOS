@@ -10,9 +10,21 @@ class StudentCreate(BaseModel):
     family_name: str = Field(min_length=1, max_length=120)
 
 
+class StudentUpdate(BaseModel):
+    student_number: str | None = Field(default=None, min_length=1, max_length=80)
+    given_name: str | None = Field(default=None, min_length=1, max_length=120)
+    family_name: str | None = Field(default=None, min_length=1, max_length=120)
+    status: str | None = Field(default=None, min_length=1, max_length=32)
+
+
 class EnrollmentRead(BaseModel):
     id: UUID
     section_id: UUID
+    section_label: str | None = None
+    grade_level_id: UUID | None = None
+    grade_label: str | None = None
+    academic_year_id: UUID | None = None
+    academic_year_name: str | None = None
     starts_on: date
     ends_on: date | None
     status: str
@@ -23,6 +35,9 @@ class EnrollmentRead(BaseModel):
 class GuardianLinkRead(BaseModel):
     id: UUID
     guardian_id: UUID
+    guardian_display_name: str | None = None
+    guardian_email: str | None = None
+    guardian_phone: str | None = None
     relationship: str
     portal_access: bool
     can_receive_notifications: bool
@@ -79,4 +94,3 @@ class EnrollmentCreate(BaseModel):
         if self.ends_on is not None and self.ends_on < self.starts_on:
             raise ValueError("Enrollment end date must be on or after the start date")
         return self
-

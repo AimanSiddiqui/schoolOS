@@ -56,12 +56,28 @@ type Student = {
   given_name: string;
   family_name: string;
   status: string;
-  enrollments: { id: string; section_id: string; starts_on: string; ends_on: string | null }[];
+  enrollments: {
+    id: string;
+    section_id: string;
+    section_label: string | null;
+    grade_level_id: string | null;
+    grade_label: string | null;
+    academic_year_id: string | null;
+    academic_year_name: string | null;
+    starts_on: string;
+    ends_on: string | null;
+    status: string;
+  }[];
   guardian_links: {
     id: string;
     guardian_id: string;
+    guardian_display_name: string | null;
+    guardian_email: string | null;
+    guardian_phone: string | null;
     relationship: string;
     portal_access: boolean;
+    can_receive_notifications: boolean;
+    emergency_contact: boolean;
   }[];
 };
 
@@ -69,6 +85,7 @@ type Guardian = {
   id: string;
   display_name: string;
   email: string;
+  phone: string | null;
 };
 
 type TeacherUser = {
@@ -115,19 +132,53 @@ function firstId<T extends { id: string }>(items: T[]): string {
   return items[0]?.id ?? "";
 }
 
+function studentName(student: Student): string {
+  return `${student.given_name} ${student.family_name}`;
+}
+
+function studentQueryFromForm(form: FormData): string {
+  const params = new URLSearchParams();
+  for (const field of ["q", "status_filter", "section_id", "grade_level_id"]) {
+    const value = String(form.get(field) ?? "").trim();
+    if (value) {
+      params.set(field, value);
+    }
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export function SchoolSetupWorkspace() {
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [setup, setSetup] = useState<SetupPayload>(emptySetup);
   const [teachers, setTeachers] = useState<TeacherUser[]>([]);
+  const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [latestStudent, setLatestStudent] = useState<Student | null>(null);
   const [latestGuardian, setLatestGuardian] = useState<Guardian | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [message, setMessage] = useState("Setup not loaded.");
   const [busy, setBusy] = useState(false);
 
   const isAdmin =
     session?.authenticated && session.current_school && session.current_role === "ADMIN";
   const firstSectionId = useMemo(() => firstId(setup.sections), [setup.sections]);
+  const selectedStudent = useMemo(
+    () => students.find((student) => student.id === selectedStudentId) ?? students[0] ?? null,
+    [students, selectedStudentId],
+  );
+
+  const loadStudents = useCallback(async (query = "") => {
+    const studentPayload = await apiRequest<Student[]>(`/students${query}`);
+    setStudents(studentPayload);
+    setSelectedStudentId((currentId) => {
+      if (studentPayload.some((student) => student.id === currentId)) {
+        return currentId;
+      }
+      return firstId(studentPayload);
+    });
+    return studentPayload;
+  }, []);
 
   const loadSetup = useCallback(async () => {
     setBusy(true);
@@ -138,21 +189,22 @@ export function SchoolSetupWorkspace() {
         setMessage("Admin school context required.");
         return;
       }
-      const [setupPayload, teacherPayload, studentPayload] = await Promise.all([
+      const [setupPayload, teacherPayload, guardianPayload] = await Promise.all([
         apiRequest<SetupPayload>("/academics/setup"),
         apiRequest<TeacherUser[]>("/students/users/teachers"),
-        apiRequest<Student[]>("/students"),
+        apiRequest<Guardian[]>("/students/guardians"),
       ]);
       setSetup(setupPayload);
       setTeachers(teacherPayload);
-      setStudents(studentPayload);
+      setGuardians(guardianPayload);
+      await loadStudents();
       setMessage("Setup loaded.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to load setup.");
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [loadStudents]);
 
   useEffect(() => {
     loadSetup();
@@ -216,7 +268,50 @@ export function SchoolSetupWorkspace() {
         given_name: form.get("given_name"),
         family_name: form.get("family_name"),
       },
-      (student) => setLatestStudent(student),
+      (student) => {
+        setLatestStudent(student);
+        setSelectedStudentId(student.id);
+      },
+    );
+  }
+
+  async function updateStudent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedStudent) {
+      setMessage("Select a student first.");
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    await submit<Student>(
+      "Updating student...",
+      `/students/${selectedStudent.id}`,
+      {
+        student_number: form.get("student_number"),
+        given_name: form.get("given_name"),
+        family_name: form.get("family_name"),
+        status: form.get("status"),
+      },
+      (student) => {
+        setLatestStudent(student);
+        setSelectedStudentId(student.id);
+      },
+      "PATCH",
+    );
+  }
+
+  async function deactivateStudent() {
+    if (!selectedStudent) {
+      setMessage("Select a student first.");
+      return;
+    }
+    await submit<Student>(
+      "Deactivating student...",
+      `/students/${selectedStudent.id}/deactivate`,
+      {},
+      (student) => {
+        setLatestStudent(student);
+        setSelectedStudentId(student.id);
+      },
     );
   }
 
@@ -246,7 +341,10 @@ export function SchoolSetupWorkspace() {
         relationship: form.get("relationship"),
         portal_access: form.get("portal_access") === "on",
       },
-      (student) => setLatestStudent(student),
+      (student) => {
+        setLatestStudent(student);
+        setSelectedStudentId(student.id);
+      },
     );
   }
 
@@ -260,17 +358,32 @@ export function SchoolSetupWorkspace() {
     });
   }
 
+  async function filterStudents(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("Filtering students...");
+    try {
+      await loadStudents(studentQueryFromForm(new FormData(event.currentTarget)));
+      setMessage("Directory filtered.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to filter students.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit<T>(
     pendingMessage: string,
     path: string,
     body: Record<string, FormDataEntryValue | number | boolean | null>,
     onSuccess?: (payload: T) => void,
+    method = "POST",
   ) {
     setBusy(true);
     setMessage(pendingMessage);
     try {
       const payload = await apiRequest<T>(path, {
-        method: "POST",
+        method,
         body: JSON.stringify(body),
       });
       onSuccess?.(payload);
@@ -470,14 +583,24 @@ export function SchoolSetupWorkspace() {
               >
                 {students.map((student) => (
                   <option key={student.id} value={student.id}>
-                    {student.given_name} {student.family_name}
+                    {studentName(student)}
                   </option>
                 ))}
               </select>
             </label>
             <label>
-              Guardian ID
-              <input name="guardian_id" defaultValue={latestGuardian?.id ?? ""} required />
+              Guardian
+              <select
+                name="guardian_id"
+                required
+                defaultValue={latestGuardian?.id ?? firstId(guardians)}
+              >
+                {guardians.map((guardian) => (
+                  <option key={guardian.id} value={guardian.id}>
+                    {guardian.display_name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Relationship
@@ -505,7 +628,7 @@ export function SchoolSetupWorkspace() {
               >
                 {students.map((student) => (
                   <option key={student.id} value={student.id}>
-                    {student.given_name} {student.family_name}
+                    {studentName(student)}
                   </option>
                 ))}
               </select>
@@ -532,19 +655,162 @@ export function SchoolSetupWorkspace() {
 
         <section className="panel setup-panel directory-panel" aria-labelledby="directory-heading">
           <h3 id="directory-heading">Directory</h3>
+          <form className="directory-filter" onSubmit={filterStudents}>
+            <label>
+              Search
+              <input name="q" placeholder="Name or number" />
+            </label>
+            <label>
+              Status
+              <select name="status_filter" defaultValue="">
+                <option value="">Any</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </label>
+            <label>
+              Section
+              <select name="section_id" defaultValue="">
+                <option value="">Any</option>
+                {setup.sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Grade
+              <select name="grade_level_id" defaultValue="">
+                <option value="">Any</option>
+                {setup.grade_levels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="secondary-button" type="submit" disabled={busy || !isAdmin}>
+              Filter
+            </button>
+          </form>
+
           <div className="record-list">
             {students.map((student) => (
-              <article key={student.id} className="record-row">
+              <button
+                key={student.id}
+                className={`record-row selectable-row ${
+                  selectedStudent?.id === student.id ? "selected" : ""
+                }`}
+                type="button"
+                onClick={() => setSelectedStudentId(student.id)}
+              >
                 <div>
-                  <strong>
-                    {student.given_name} {student.family_name}
-                  </strong>
+                  <strong>{studentName(student)}</strong>
                   <p className="muted">{student.student_number}</p>
                 </div>
-                <span>{student.enrollments.length} enrollments</span>
-              </article>
+                <span>{student.status}</span>
+              </button>
             ))}
           </div>
+        </section>
+
+        <section className="panel setup-panel profile-panel" aria-labelledby="profile-heading">
+          <h3 id="profile-heading">Student Profile</h3>
+          {selectedStudent ? (
+            <>
+              <div className="profile-summary">
+                <div>
+                  <p className="small-label">Selected</p>
+                  <p className="context-value">{studentName(selectedStudent)}</p>
+                  <p className="muted">{selectedStudent.student_number}</p>
+                </div>
+                <span className="status-pill">{selectedStudent.status}</span>
+              </div>
+
+              <form
+                key={selectedStudent.id}
+                className="form-grid compact-form"
+                onSubmit={updateStudent}
+              >
+                <label>
+                  Number
+                  <input
+                    name="student_number"
+                    defaultValue={selectedStudent.student_number}
+                    required
+                  />
+                </label>
+                <label>
+                  Given name
+                  <input name="given_name" defaultValue={selectedStudent.given_name} required />
+                </label>
+                <label>
+                  Family name
+                  <input name="family_name" defaultValue={selectedStudent.family_name} required />
+                </label>
+                <label>
+                  Status
+                  <select name="status" defaultValue={selectedStudent.status}>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                </label>
+                <div className="button-row">
+                  <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
+                    Update
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={deactivateStudent}
+                    disabled={busy || !isAdmin || selectedStudent.status === "INACTIVE"}
+                  >
+                    Deactivate
+                  </button>
+                </div>
+              </form>
+
+              <div className="profile-lists">
+                <div>
+                  <p className="small-label">Enrollments</p>
+                  {selectedStudent.enrollments.length > 0 ? (
+                    <ul className="plain-list">
+                      {selectedStudent.enrollments.map((enrollment) => (
+                        <li key={enrollment.id}>
+                          <strong>{enrollment.section_label ?? enrollment.section_id}</strong>
+                          <span>
+                            {enrollment.grade_label ?? "Grade"} - {enrollment.academic_year_name}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No enrollments yet.</p>
+                  )}
+                </div>
+                <div>
+                  <p className="small-label">Guardians</p>
+                  {selectedStudent.guardian_links.length > 0 ? (
+                    <ul className="plain-list">
+                      {selectedStudent.guardian_links.map((link) => (
+                        <li key={link.id}>
+                          <strong>{link.guardian_display_name ?? link.guardian_id}</strong>
+                          <span>
+                            {link.relationship} - {link.portal_access ? "Portal" : "No portal"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No guardians linked.</p>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="muted">Create or select a student to view the profile.</p>
+          )}
         </section>
       </div>
     </section>

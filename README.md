@@ -4,7 +4,7 @@ SchoolOS is a local-first school-management MVP focused on attendance, follow-up
 
 ## Current Status
 
-Milestones 0 through 2 are complete, and Milestone 3 has the first academics/directory slice:
+Milestones 0 through 2 are complete, and Milestone 3 has the academics/student directory slice:
 
 - FastAPI backend with health endpoints.
 - Next.js frontend shell with a live backend health check.
@@ -13,7 +13,7 @@ Milestones 0 through 2 are complete, and Milestone 3 has the first academics/dir
 - Compose services for backend, frontend, PostgreSQL, Mailpit, and n8n.
 - CI workflow for backend and frontend checks.
 - School onboarding, login/logout, revocable cookie sessions, membership selection, and tenant-context checks.
-- Academic years, grade levels, sections, subjects, teacher assignments, students, guardians, guardian links, enrollments, and scoped directory views.
+- Academic years, grade levels, sections, subjects, teacher assignments, students, guardians, guardian links, enrollments, scoped directory views, student search/filtering, profile details, edit, and deactivate.
 
 ## Requirements
 
@@ -32,13 +32,7 @@ Copy-Item .env.example .env
 Start the full local stack after Docker Desktop is installed:
 
 ```powershell
-docker compose up --build
-```
-
-Apply database migrations:
-
-```powershell
-docker compose exec backend alembic upgrade head
+docker compose up -d --build
 ```
 
 Seed synthetic local data:
@@ -84,6 +78,16 @@ npm run dev
 
 The frontend proxies `/api/backend/*` to the backend through `API_INTERNAL_URL`, defaulting to `http://localhost:8000`.
 
+## Docker Notes
+
+The backend container runs `alembic upgrade head` before starting Uvicorn, so the local PostgreSQL schema is upgraded automatically during `docker compose up`.
+
+If the current terminal does not see `docker` immediately after installing Docker Desktop, refresh the terminal or prepend Docker's bin folder for the session:
+
+```powershell
+$env:PATH = 'C:\Program Files\Docker\Docker\resources\bin;' + $env:PATH
+```
+
 ## Identity API
 
 Current Milestone 2 endpoints:
@@ -111,6 +115,9 @@ Current Milestone 3 endpoints:
 - `GET /api/v1/students`
 - `POST /api/v1/students`
 - `GET /api/v1/students/{student_id}`
+- `PATCH /api/v1/students/{student_id}`
+- `POST /api/v1/students/{student_id}/deactivate`
+- `GET /api/v1/students/guardians`
 - `POST /api/v1/students/guardians`
 - `POST /api/v1/students/{student_id}/guardians`
 - `POST /api/v1/students/enrollments`

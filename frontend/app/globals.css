@@ -212,6 +212,18 @@ button:focus-visible {
   color: var(--text);
 }
 
+.danger-button {
+  min-height: 42px;
+  border: 1px solid rgba(180, 35, 24, 0.28);
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: #fff4f2;
+  color: var(--danger);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
@@ -326,6 +338,18 @@ button:disabled {
   grid-column: span 2;
 }
 
+.profile-panel {
+  grid-column: span 2;
+}
+
+.directory-filter {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
 .record-list {
   display: grid;
   gap: 10px;
@@ -342,6 +366,19 @@ button:disabled {
   background: var(--surface-muted);
 }
 
+button.record-row {
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.selectable-row.selected {
+  border-color: var(--accent);
+  background: #e7f2eb;
+}
+
 .record-row p {
   margin-bottom: 0;
 }
@@ -350,6 +387,65 @@ button:disabled {
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+}
+
+.button-row button {
+  flex: 1;
+}
+
+.profile-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.status-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.profile-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.plain-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plain-list li {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.plain-list span {
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .muted {
@@ -431,6 +527,15 @@ button:disabled {
 
   .directory-panel {
     grid-column: span 1;
+  }
+
+  .profile-panel {
+    grid-column: span 1;
+  }
+
+  .directory-filter,
+  .profile-lists {
+    grid-template-columns: 1fr;
   }
 
   .auth-panel,

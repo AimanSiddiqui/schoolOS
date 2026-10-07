@@ -2,20 +2,20 @@
 
 ## Current State
 
-Milestones 0 through 2 are complete. Milestone 3 has a tested academics and directory setup slice.
+Milestones 0 through 2 are complete. Milestone 3 now has a tested academics and student directory/profile slice.
 The repository was empty when inspected:
 
 - No existing application source files.
 - No initial `AGENTS.md` or repository-specific instructions were found. Next.js later generated
   `frontend/AGENTS.md` and `frontend/CLAUDE.md` for this Next version.
-- No Git metadata found from this workspace path.
+- Git repository initialized in this workspace.
 - No existing tests, migrations, CI, or setup documentation.
 
 Current local tool check:
 
 - Python 3.12.7 is available.
 - Node.js 22.14.0 is available.
-- Docker is not installed, so the full Compose stack has not been run on this machine yet.
+- Docker Desktop is installed and the full Compose stack has been runtime-verified locally.
 
 ## Milestone Checklist
 
@@ -36,12 +36,14 @@ Acceptance status: Complete for initial planning. The requirements define daily 
 - [x] Add synthetic seed data and documented migration/seed commands.
 - [x] Add CI for checks that exist at this stage.
 
-Acceptance status: Source implementation is complete. Full runtime acceptance still needs verification on a machine with Docker Desktop installed:
+Acceptance status: Complete for the reproducible foundation. Docker Desktop is installed and the full runtime path has been verified locally:
 
-- `docker compose up --build`
-- `docker compose exec backend alembic upgrade head`
-- `docker compose exec backend python -m app.seed`
-- frontend health check reaching the backend through `/api/backend/health`
+- `docker compose up -d --build`
+- backend startup runs `alembic upgrade head`
+- frontend responds on `http://localhost:3000`
+- backend responds on `http://localhost:8000/healthz`
+- Mailpit responds on `http://localhost:8025`
+- n8n responds on `http://localhost:5678`
 
 Local checks completed:
 
@@ -71,16 +73,17 @@ Local checks completed:
 - `frontend npm run typecheck`: passed.
 - `frontend npm run build`: passed.
 
-Remaining environment gap:
+Runtime verification:
 
-- Docker is still not installed on this machine, so Compose, PostgreSQL migrations, Mailpit, and n8n have not been runtime-verified locally.
+- Docker Compose stack verified with PostgreSQL, backend, frontend, Mailpit, and n8n running locally.
+- Real onboarding request succeeded against Dockerized PostgreSQL after migrations.
 
 ### Milestone 3: Academics And Student Directory
 
 - [x] Create academic year, configurable levels, sections, subjects, and teacher assignments.
-- [ ] Implement student search/create/edit/deactivate and guardian links.
+- [x] Implement student search/create/edit/deactivate and guardian links.
 - [x] Implement enrollment dates/history and teacher/guardian-scoped views.
-- [ ] Build real API-backed directory/profile and admin setup pages.
+- [x] Build real API-backed directory/profile and admin setup pages.
 
 Completed slice:
 
@@ -89,22 +92,25 @@ Completed slice:
 - Added admin APIs for academic setup, students, guardians, guardian links, and enrollments.
 - Added role-scoped student listing/detail access for admin, assigned teacher, and linked guardian.
 - Added frontend admin setup workspace backed by the real APIs.
-- Added backend tests for full admin setup flow, cross-school rejection, teacher scoping, and guardian scoping.
-- Added frontend tests for setup loading, academic year submit, and non-admin blocking.
+- Added student directory search and filters for text, status, section, and grade level.
+- Added student profile panel with enrollment and guardian details.
+- Added student update and deactivate flows.
+- Added selectable guardian linking from API-loaded guardians.
+- Added backend tests for full admin setup flow, cross-school rejection, teacher scoping, guardian scoping, search/filter/profile/update/deactivate.
+- Added frontend tests for setup loading, academic year submit, non-admin blocking, directory filtering, and student update.
 
 Remaining Milestone 3 work:
 
-- Student search, edit, and deactivate.
-- Fuller student profile view.
-- Better guardian selection after creation instead of manually showing the latest guardian id.
-- Runtime verification against PostgreSQL once Docker is available.
+- Academic setup record edit/deactivate flows for sections, subjects, grade levels, academic years, and teacher assignments.
+- More complete student lifecycle polish, including enrollment end dates and guardian-link editing.
+- Optional browser E2E coverage for the admin setup journey.
 
 Local checks completed:
 
 - `backend/.venv/Scripts/python.exe -m ruff check .`: passed.
-- `backend/.venv/Scripts/python.exe -m pytest`: passed, 12 tests, 1 upstream deprecation warning from FastAPI/Starlette TestClient.
+- `backend/.venv/Scripts/python.exe -m pytest`: passed, 13 tests, 1 upstream deprecation warning from FastAPI/Starlette TestClient.
 - `frontend npm run lint`: passed.
-- `frontend npm run test`: passed, 7 tests.
+- `frontend npm run test`: passed, 8 tests.
 - `frontend npm run typecheck`: passed.
 - `frontend npm run build`: passed.
 
@@ -149,9 +155,9 @@ Local checks completed:
 
 ## Next Implementation Step
 
-Finish the remaining Milestone 3 directory work:
+Finish Milestone 3 polish or move into Milestone 4:
 
-- Add student search, edit, and deactivate endpoints and UI.
-- Add a focused student profile surface with enrollment and guardian details.
-- Improve guardian linking to use selectable guardians from API data.
-- Keep tenant-scope tests for each new read/write path.
+- Add edit/deactivate flows for academic setup records and teacher assignments.
+- Add enrollment end-date editing and guardian-link editing.
+- Add a browser E2E demo for the admin setup and student profile workflow.
+- Start the attendance vertical slice once the remaining directory polish is acceptable.
