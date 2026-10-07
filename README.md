@@ -16,6 +16,7 @@ Milestones 0 through 2 are complete, and Milestone 3 has the academics/student d
 - Academic years, grade levels, sections, subjects, teacher assignments, students, guardians, guardian links, enrollments, scoped directory views, student search/filtering, profile details, edit, and deactivate.
 - Academic setup maintenance, including edit/deactivate flows for years, grade levels, sections, subjects, and teacher assignments.
 - Enrollment end-date/status edits and guardian-link relationship/portal edits.
+- Tabbed admin workspace views for overview, academic setup, directory, student profile, and maintenance.
 
 ## Requirements
 

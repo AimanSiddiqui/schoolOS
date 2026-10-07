@@ -126,9 +126,14 @@ describe("SchoolSetupWorkspace", () => {
 
     expect(await screen.findByText("Setup loaded.")).toBeInTheDocument();
     expect(screen.getByText("Local Demo School")).toBeInTheDocument();
+    expect(screen.getByText("active of 1 total")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Directory" }));
     const directory = screen.getByRole("region", { name: "Directory" });
     expect(within(directory).getByText("Sara Stone")).toBeInTheDocument();
     expect(within(directory).getByText("S-001")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Student Profile" }));
     const profile = screen.getByRole("region", { name: "Student Profile" });
     expect(within(profile).getByText("Nadia Stone")).toBeInTheDocument();
     expect(within(profile).getAllByText("1A")).not.toHaveLength(0);
@@ -160,6 +165,7 @@ describe("SchoolSetupWorkspace", () => {
     render(<SchoolSetupWorkspace />);
 
     await screen.findByText("Setup loaded.");
+    fireEvent.click(screen.getByRole("button", { name: "Academic Setup" }));
     const yearPanel = screen.getByRole("region", { name: "Academic Year" });
     fireEvent.submit(within(yearPanel).getByLabelText("Name").closest("form") as HTMLFormElement);
 
@@ -222,6 +228,7 @@ describe("SchoolSetupWorkspace", () => {
     render(<SchoolSetupWorkspace />);
 
     await screen.findByText("Setup loaded.");
+    fireEvent.click(screen.getByRole("button", { name: "Directory" }));
     const directory = screen.getByRole("region", { name: "Directory" });
     fireEvent.change(within(directory).getByLabelText("Search"), {
       target: { value: "Sara" },
@@ -238,6 +245,7 @@ describe("SchoolSetupWorkspace", () => {
       );
     });
 
+    fireEvent.click(screen.getByRole("button", { name: "Student Profile" }));
     const profile = screen.getByRole("region", { name: "Student Profile" });
     fireEvent.change(within(profile).getByLabelText("Number"), {
       target: { value: "S-010" },
@@ -300,6 +308,7 @@ describe("SchoolSetupWorkspace", () => {
     render(<SchoolSetupWorkspace />);
 
     await screen.findByText("Setup loaded.");
+    fireEvent.click(screen.getByRole("button", { name: "Maintenance" }));
     const maintenance = screen.getByRole("region", { name: "Academic Maintenance" });
     fireEvent.change(within(maintenance).getAllByLabelText("Name")[0], {
       target: { value: "2026-27" },
@@ -319,6 +328,7 @@ describe("SchoolSetupWorkspace", () => {
       });
     });
 
+    fireEvent.click(screen.getByRole("button", { name: "Student Profile" }));
     const profile = screen.getByRole("region", { name: "Student Profile" });
     fireEvent.change(within(profile).getByLabelText("Ends"), {
       target: { value: "2026-12-31" },

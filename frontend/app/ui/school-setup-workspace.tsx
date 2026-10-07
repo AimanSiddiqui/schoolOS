@@ -97,6 +97,16 @@ type TeacherUser = {
   email: string;
 };
 
+type WorkspaceView = "overview" | "academics" | "directory" | "profile" | "maintenance";
+
+const workspaceTabs: { id: WorkspaceView; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "academics", label: "Academic Setup" },
+  { id: "directory", label: "Directory" },
+  { id: "profile", label: "Student Profile" },
+  { id: "maintenance", label: "Maintenance" },
+];
+
 const emptySetup: SetupPayload = {
   academic_years: [],
   grade_levels: [],
@@ -165,6 +175,7 @@ export function SchoolSetupWorkspace() {
   const [latestStudent, setLatestStudent] = useState<Student | null>(null);
   const [latestGuardian, setLatestGuardian] = useState<Guardian | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [activeView, setActiveView] = useState<WorkspaceView>("overview");
   const [message, setMessage] = useState("Setup not loaded.");
   const [busy, setBusy] = useState(false);
 
@@ -174,6 +185,17 @@ export function SchoolSetupWorkspace() {
   const selectedStudent = useMemo(
     () => students.find((student) => student.id === selectedStudentId) ?? students[0] ?? null,
     [students, selectedStudentId],
+  );
+  const activeSectionCount = setup.sections.filter((section) => section.status === "ACTIVE").length;
+  const activeStudentCount = students.filter((student) => student.status === "ACTIVE").length;
+  const linkedGuardianCount = students.reduce(
+    (total, student) => total + student.guardian_links.length,
+    0,
+  );
+  const activeEnrollmentCount = students.reduce(
+    (total, student) =>
+      total + student.enrollments.filter((enrollment) => enrollment.status === "ACTIVE").length,
+    0,
   );
 
   const loadStudents = useCallback(async (query = "") => {
@@ -578,8 +600,49 @@ export function SchoolSetupWorkspace() {
         ) : null}
       </div>
 
+      <nav className="workspace-tabs" aria-label="SchoolOS sections">
+        {workspaceTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={activeView === tab.id ? "active" : ""}
+            onClick={() => setActiveView(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeView === "overview" ? (
+        <div className="overview-grid">
+          <section className="metric-panel">
+            <p className="small-label">Students</p>
+            <strong>{activeStudentCount}</strong>
+            <span>active of {students.length} total</span>
+          </section>
+          <section className="metric-panel">
+            <p className="small-label">Sections</p>
+            <strong>{activeSectionCount}</strong>
+            <span>active sections</span>
+          </section>
+          <section className="metric-panel">
+            <p className="small-label">Enrollments</p>
+            <strong>{activeEnrollmentCount}</strong>
+            <span>active records</span>
+          </section>
+          <section className="metric-panel">
+            <p className="small-label">Guardians</p>
+            <strong>{guardians.length}</strong>
+            <span>{linkedGuardianCount} student links</span>
+          </section>
+        </div>
+      ) : null}
+
       <div className="setup-grid" aria-disabled={!isAdmin}>
-        <section className="panel setup-panel" aria-labelledby="year-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          aria-labelledby="year-heading"
+        >
           <h3 id="year-heading">Academic Year</h3>
           <form className="form-grid" onSubmit={createAcademicYear}>
             <label>
@@ -600,7 +663,10 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel" aria-labelledby="level-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          aria-labelledby="level-heading"
+        >
           <h3 id="level-heading">Grade Level</h3>
           <form className="form-grid" onSubmit={createGradeLevel}>
             <label>
@@ -617,7 +683,10 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel" aria-labelledby="section-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          aria-labelledby="section-heading"
+        >
           <h3 id="section-heading">Section</h3>
           <form className="form-grid" onSubmit={createSection}>
             <label>
@@ -650,7 +719,10 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel" aria-labelledby="subject-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          aria-labelledby="subject-heading"
+        >
           <h3 id="subject-heading">Subject</h3>
           <form className="form-grid" onSubmit={createSubject}>
             <label>
@@ -700,7 +772,9 @@ export function SchoolSetupWorkspace() {
         </section>
 
         <section
-          className="panel setup-panel maintenance-panel"
+          className={`panel setup-panel maintenance-panel view-panel ${
+            activeView === "maintenance" ? "active" : ""
+          }`}
           aria-labelledby="maintenance-heading"
         >
           <h3 id="maintenance-heading">Academic Maintenance</h3>
@@ -993,7 +1067,10 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel" aria-labelledby="student-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
+          aria-labelledby="student-heading"
+        >
           <h3 id="student-heading">Student</h3>
           <form className="form-grid" onSubmit={createStudent}>
             <label>
@@ -1014,7 +1091,10 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel" aria-labelledby="guardian-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
+          aria-labelledby="guardian-heading"
+        >
           <h3 id="guardian-heading">Guardian</h3>
           <form className="form-grid" onSubmit={createGuardian}>
             <label>
@@ -1073,7 +1153,10 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel" aria-labelledby="enrollment-heading">
+        <section
+          className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
+          aria-labelledby="enrollment-heading"
+        >
           <h3 id="enrollment-heading">Enrollment</h3>
           <form className="form-grid" onSubmit={createEnrollment}>
             <label>
@@ -1110,7 +1193,12 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section className="panel setup-panel directory-panel" aria-labelledby="directory-heading">
+        <section
+          className={`panel setup-panel directory-panel view-panel ${
+            activeView === "directory" ? "active" : ""
+          }`}
+          aria-labelledby="directory-heading"
+        >
           <h3 id="directory-heading">Directory</h3>
           <form className="directory-filter" onSubmit={filterStudents}>
             <label>
@@ -1172,7 +1260,12 @@ export function SchoolSetupWorkspace() {
           </div>
         </section>
 
-        <section className="panel setup-panel profile-panel" aria-labelledby="profile-heading">
+        <section
+          className={`panel setup-panel profile-panel view-panel ${
+            activeView === "profile" ? "active" : ""
+          }`}
+          aria-labelledby="profile-heading"
+        >
           <h3 id="profile-heading">Student Profile</h3>
           {selectedStudent ? (
             <>

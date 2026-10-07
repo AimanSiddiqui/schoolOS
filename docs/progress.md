@@ -99,6 +99,7 @@ Completed slice:
 - Added academic setup edit/deactivate flows for academic years, grade levels, sections, subjects,
   and teacher assignments.
 - Added enrollment end-date/status editing and guardian-link relationship/portal editing.
+- Split the admin workspace into overview, academic setup, directory, student profile, and maintenance views.
 - Added `0004_academic_statuses` migration so academic setup records can be deactivated without
   hard deletion.
 - Added backend tests for full admin setup flow, cross-school rejection, teacher scoping, guardian scoping, search/filter/profile/update/deactivate, academic maintenance, enrollment editing, and guardian-link editing.
