@@ -35,6 +35,8 @@ const emptySession: SessionPayload = {
   current_role: null,
 };
 
+const onboardingClosedMessage = "Onboarding is only available before the first school exists";
+
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/backend${path}`, {
     ...init,
@@ -105,7 +107,13 @@ export function AuthWorkspace() {
       setSession(payload);
       setMessage("School created and admin signed in.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to create school.");
+      const message = error instanceof Error ? error.message : "Unable to create school.";
+      if (message === onboardingClosedMessage) {
+        setMode("login");
+        setMessage("A school already exists. Sign in with the existing admin account.");
+      } else {
+        setMessage(message);
+      }
     } finally {
       setBusy(false);
     }

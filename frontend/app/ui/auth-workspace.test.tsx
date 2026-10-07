@@ -200,7 +200,7 @@ describe("AuthWorkspace", () => {
     expect(screen.getByText("None selected")).toBeInTheDocument();
   });
 
-  it("shows API error messages from failed requests", async () => {
+  it("moves to login when onboarding is already closed", async () => {
     mockFetch((url, init) => {
       if (url === "/api/backend/health") {
         return jsonResponse({ status: "ok", service: "schoolos-api", environment: "local" });
@@ -224,7 +224,8 @@ describe("AuthWorkspace", () => {
     await user.click(screen.getByRole("button", { name: "Create first school" }));
 
     expect(
-      await screen.findByText("Onboarding is only available before the first school exists"),
+      await screen.findByText("A school already exists. Sign in with the existing admin account."),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 });
