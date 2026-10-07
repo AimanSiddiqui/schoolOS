@@ -36,6 +36,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        API_INTERNAL_URL: ${API_INTERNAL_URL:-http://backend:8000}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/backend}
     environment:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/backend}
       API_INTERNAL_URL: ${API_INTERNAL_URL:-http://backend:8000}
@@ -78,4 +81,3 @@ services:
 volumes:
   postgres_data:
   n8n_data:
-
