@@ -139,6 +139,7 @@ describe("AuthWorkspace", () => {
     render(<AuthWorkspace />);
 
     await screen.findByText("No active session.");
+    await user.click(screen.getByRole("button", { name: "Onboard" }));
     await user.click(screen.getByRole("button", { name: "Create first school" }));
 
     expect(await screen.findByText("School created and admin signed in.")).toBeInTheDocument();
@@ -221,6 +222,7 @@ describe("AuthWorkspace", () => {
     render(<AuthWorkspace />);
 
     await screen.findByText("No active session.");
+    await user.click(screen.getByRole("button", { name: "Onboard" }));
     await user.click(screen.getByRole("button", { name: "Create first school" }));
 
     expect(

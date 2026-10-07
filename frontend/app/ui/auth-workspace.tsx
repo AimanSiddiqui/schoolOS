@@ -69,7 +69,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function AuthWorkspace() {
   const [session, setSession] = useState<SessionPayload>(emptySession);
-  const [mode, setMode] = useState<"onboard" | "login">("onboard");
+  const [mode, setMode] = useState<"onboard" | "login">("login");
   const [message, setMessage] = useState("Checking session...");
   const [busy, setBusy] = useState(false);
 
@@ -199,7 +199,7 @@ export function AuthWorkspace() {
         </div>
 
         {mode === "onboard" ? (
-          <form className="form-grid" onSubmit={handleOnboard}>
+          <form key="onboard" className="form-grid" onSubmit={handleOnboard}>
             <label>
               School name
               <input name="school_name" defaultValue="Local Demo School" required minLength={2} />
@@ -235,7 +235,7 @@ export function AuthWorkspace() {
             </button>
           </form>
         ) : (
-          <form className="form-grid" onSubmit={handleLogin}>
+          <form key="login" className="form-grid" onSubmit={handleLogin}>
             <label>
               Email
               <input name="email" type="email" defaultValue="admin@schoolos.local" required />
