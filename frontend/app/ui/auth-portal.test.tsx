@@ -85,7 +85,7 @@ describe("AuthPortal", () => {
 
     render(<AuthPortal mode="signup" />);
 
-    expect(screen.getByRole("heading", { name: "Sign up" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Create account" })).toBeInTheDocument();
     await user.type(screen.getByLabelText("School name"), "Northview School");
     await user.type(screen.getByLabelText("Timezone"), "Europe/Berlin");
     await user.type(screen.getByLabelText("Language"), "en");

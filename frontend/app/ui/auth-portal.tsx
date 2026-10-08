@@ -162,30 +162,69 @@ export function AuthPortal({ mode, onSessionChange }: AuthPortalProps) {
 
   return (
     <section className={`auth-portal ${isSignup ? "signup-portal" : "login-portal"}`}>
-      <div className="auth-hero-panel">
+      <div className="auth-showcase">
         <Link className="auth-brand" href="/">
           SchoolOS
         </Link>
-        <p className="eyebrow">{isSignup ? "New school setup" : "Welcome back"}</p>
-        <h1 id="login-heading">
-          {isSignup ? "Create your school workspace." : "Sign in to your school dashboard."}
+
+        <p className="eyebrow">{isSignup ? "Workspace setup" : "Welcome back"}</p>
+        <h1 id="login-heading" className="auth-title">
+          {isSignup ? "Start a polished school workspace." : "Return to the school day."}
         </h1>
-        <p>
+        <p className="auth-intro">
           {isSignup
-            ? "Set up the first administrator account and start organizing attendance, academics, and follow-up work."
-            : "Open your workspace, pick the right school context, and continue the day from a focused dashboard."}
+            ? "Create the first administrator account, define your school context, and move into a guided operations dashboard."
+            : "Open attendance, records, and follow-up work from a calmer access screen built for busy school teams."}
         </p>
-        <section className="auth-highlights" aria-label="SchoolOS highlights">
-          <span>Attendance ready</span>
-          <span>Student records</span>
-          <span>Role-aware access</span>
-        </section>
+
+        {isSignup ? (
+          <section className="signup-journey" aria-label="Setup journey">
+            <div>
+              <span>01</span>
+              <strong>Create school</strong>
+              <small>Name, language, timezone</small>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>Add admin</strong>
+              <small>Secure owner account</small>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>Open dashboard</strong>
+              <small>Records and attendance</small>
+            </div>
+          </section>
+        ) : (
+          <section className="login-showcase-card" aria-label="Today in SchoolOS">
+            <div className="showcase-topline">
+              <span>Today</span>
+              <strong>92%</strong>
+            </div>
+            <p>Attendance marked across active sections</p>
+            <div className="showcase-list">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="auth-metric-row">
+              <div>
+                <strong>128</strong>
+                <small>Students</small>
+              </div>
+              <div>
+                <strong>6</strong>
+                <small>Actions</small>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
       <section className="auth-card" aria-labelledby="auth-card-heading">
         <div className="auth-card-heading">
-          <p className="small-label">{isSignup ? "Start here" : "Secure access"}</p>
-          <h2 id="auth-card-heading">{isSignup ? "Sign up" : "Log in"}</h2>
+          <p className="small-label">{isSignup ? "New account" : "Secure access"}</p>
+          <h2 id="auth-card-heading">{isSignup ? "Create account" : "Log in"}</h2>
         </div>
 
         {isSignup ? (
