@@ -11,6 +11,20 @@ vi.mock("./auth-workspace", () => ({
         type="button"
         onClick={() =>
           onSessionChange?.({
+            authenticated: false,
+            user: null,
+            memberships: [],
+            current_school: null,
+            current_role: null,
+          })
+        }
+      >
+        Report signed out
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSessionChange?.({
             authenticated: true,
             user: {
               id: "user-admin",
@@ -71,16 +85,22 @@ describe("AppWorkspace", () => {
     );
   });
 
-  it("moves from landing to login to a tabbed dashboard", async () => {
-    const user = userEvent.setup();
-
+  it("links the landing page to the dedicated login route", () => {
     render(<AppWorkspace />);
 
-    expect(screen.getByText("Run the school day from one calm dashboard.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+  });
 
-    await user.click(screen.getByRole("button", { name: "Sign in" }));
+  it("moves from direct login to a tabbed dashboard", async () => {
+    const user = userEvent.setup();
+
+    render(<AppWorkspace initialStage="login" />);
 
     expect(screen.getByText("Sign in to SchoolOS")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Report signed out" }));
+    expect(screen.getByText("Sign in to SchoolOS")).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "Complete login" }));
 
     expect(await screen.findByText("Operations Overview")).toBeInTheDocument();

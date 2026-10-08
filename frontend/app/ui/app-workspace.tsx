@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AttendanceWorkspace } from "./attendance-workspace";
 import { AuthWorkspace } from "./auth-workspace";
@@ -26,6 +27,9 @@ type SessionPayload = {
 
 type AppStage = "landing" | "login" | "dashboard";
 type DashboardView = "overview" | "academics" | "attendance" | "access";
+type AppWorkspaceProps = {
+  initialStage?: AppStage;
+};
 
 const dashboardViews: { id: DashboardView; label: string; detail: string; icon: string }[] = [
   { id: "overview", label: "Overview", detail: "Today", icon: "OV" },
@@ -50,8 +54,8 @@ function hasSchoolContext(session: SessionPayload | null): boolean {
   return Boolean(session?.authenticated && session.current_school);
 }
 
-export function AppWorkspace() {
-  const [stage, setStage] = useState<AppStage>("landing");
+export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {}) {
+  const [stage, setStage] = useState<AppStage>(initialStage);
   const [dashboardView, setDashboardView] = useState<DashboardView>("overview");
   const [session, setSession] = useState<SessionPayload | null>(null);
 
@@ -83,7 +87,7 @@ export function AppWorkspace() {
       setStage("dashboard");
       setDashboardView("overview");
     } else if (!payload.authenticated) {
-      setStage("landing");
+      setStage((currentStage) => (currentStage === "dashboard" ? "landing" : currentStage));
       setDashboardView("overview");
     }
   }, []);
@@ -107,9 +111,9 @@ export function AppWorkspace() {
             <span className="brand-mark">SchoolOS</span>
             <p>Student operations, attendance, and follow-up in one local workspace.</p>
           </div>
-          <button className="secondary-button" type="button" onClick={() => setStage("login")}>
+          <Link className="secondary-button" href="/login">
             Login
-          </button>
+          </Link>
         </header>
 
         <div className="landing-hero">
@@ -121,9 +125,9 @@ export function AppWorkspace() {
               from a role-aware workspace built for administrators and teachers.
             </p>
             <div className="landing-actions">
-              <button className="primary-button" type="button" onClick={() => setStage("login")}>
+              <Link className="primary-button" href="/login">
                 Sign in
-              </button>
+              </Link>
               <button
                 className="secondary-button"
                 type="button"
@@ -175,9 +179,9 @@ export function AppWorkspace() {
   if (stage === "login") {
     return (
       <section className="login-page" aria-labelledby="login-heading">
-        <button className="secondary-button" type="button" onClick={() => setStage("landing")}>
+        <Link className="secondary-button" href="/">
           Back to landing
-        </button>
+        </Link>
         <div className="login-shell">
           <div className="login-copy">
             <p className="eyebrow">Secure access</p>
