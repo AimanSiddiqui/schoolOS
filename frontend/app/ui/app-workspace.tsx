@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AttendanceWorkspace } from "./attendance-workspace";
+import { AuthPortal } from "./auth-portal";
 import { AuthWorkspace } from "./auth-workspace";
 import { SchoolSetupWorkspace } from "./school-setup-workspace";
 
@@ -25,7 +26,7 @@ type SessionPayload = {
   current_role: string | null;
 };
 
-type AppStage = "landing" | "login" | "dashboard";
+type AppStage = "landing" | "login" | "signup" | "dashboard";
 type DashboardView = "overview" | "academics" | "attendance" | "access";
 type AppWorkspaceProps = {
   initialStage?: AppStage;
@@ -111,9 +112,14 @@ export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {
             <span className="brand-mark">SchoolOS</span>
             <p>Student operations, attendance, and follow-up in one local workspace.</p>
           </div>
-          <Link className="secondary-button" href="/login">
-            Login
-          </Link>
+          <div className="landing-header-actions">
+            <Link className="secondary-button" href="/login">
+              Login
+            </Link>
+            <Link className="primary-button" href="/signup">
+              Sign up
+            </Link>
+          </div>
         </header>
 
         <div className="landing-hero">
@@ -126,7 +132,10 @@ export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {
             </p>
             <div className="landing-actions">
               <Link className="primary-button" href="/login">
-                Sign in
+                Log in
+              </Link>
+              <Link className="secondary-button" href="/signup">
+                Sign up
               </Link>
               <button
                 className="secondary-button"
@@ -176,23 +185,16 @@ export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {
     );
   }
 
-  if (stage === "login") {
+  if (stage === "login" || stage === "signup") {
     return (
       <section className="login-page" aria-labelledby="login-heading">
         <Link className="secondary-button" href="/">
           Back to landing
         </Link>
-        <div className="login-shell">
-          <div className="login-copy">
-            <p className="eyebrow">Secure access</p>
-            <h1 id="login-heading">Sign in to SchoolOS</h1>
-            <p className="summary">
-              Choose your school context after authentication, then continue into the operational
-              dashboard.
-            </p>
-          </div>
-          <AuthWorkspace onSessionChange={handleSessionChange} />
-        </div>
+        <AuthPortal
+          mode={stage === "signup" ? "signup" : "login"}
+          onSessionChange={handleSessionChange}
+        />
       </section>
     );
   }

@@ -3,6 +3,57 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppWorkspace } from "./app-workspace";
 
+vi.mock("./auth-portal", () => ({
+  AuthPortal: ({
+    mode,
+    onSessionChange,
+  }: {
+    mode: "login" | "signup";
+    onSessionChange?: (session: unknown) => void;
+  }) => (
+    <div>
+      <div>{mode === "signup" ? "Signup portal mounted" : "Login portal mounted"}</div>
+      <button
+        type="button"
+        onClick={() =>
+          onSessionChange?.({
+            authenticated: false,
+            user: null,
+            memberships: [],
+            current_school: null,
+            current_role: null,
+          })
+        }
+      >
+        Report signed out
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSessionChange?.({
+            authenticated: true,
+            user: {
+              id: "user-admin",
+              email: "admin@schoolos.local",
+              display_name: "Amina Admin",
+            },
+            memberships: [],
+            current_school: {
+              id: "school-demo",
+              name: "Local Demo School",
+              timezone: "Europe/Berlin",
+              language: "en",
+            },
+            current_role: "ADMIN",
+          })
+        }
+      >
+        Complete login
+      </button>
+    </div>
+  ),
+}));
+
 vi.mock("./auth-workspace", () => ({
   AuthWorkspace: ({ onSessionChange }: { onSessionChange?: (session: unknown) => void }) => (
     <div>
@@ -89,7 +140,8 @@ describe("AppWorkspace", () => {
     render(<AppWorkspace />);
 
     expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/login");
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
+    expect(screen.getAllByRole("link", { name: "Sign up" })[0]).toHaveAttribute("href", "/signup");
   });
 
   it("moves from direct login to a tabbed dashboard", async () => {
@@ -97,9 +149,9 @@ describe("AppWorkspace", () => {
 
     render(<AppWorkspace initialStage="login" />);
 
-    expect(screen.getByText("Sign in to SchoolOS")).toBeInTheDocument();
+    expect(screen.getByText("Login portal mounted")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Report signed out" }));
-    expect(screen.getByText("Sign in to SchoolOS")).toBeInTheDocument();
+    expect(screen.getByText("Login portal mounted")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Complete login" }));
 
@@ -120,5 +172,11 @@ describe("AppWorkspace", () => {
     await user.click(screen.getAllByRole("button", { name: "Logout" })[0]);
 
     expect(screen.getByText("Run the school day from one calm dashboard.")).toBeInTheDocument();
+  });
+
+  it("renders the dedicated signup experience", () => {
+    render(<AppWorkspace initialStage="signup" />);
+
+    expect(screen.getByText("Signup portal mounted")).toBeInTheDocument();
   });
 });

@@ -787,6 +787,13 @@ button.record-row {
   color: var(--muted);
 }
 
+.landing-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .landing-hero {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1fr);
@@ -909,15 +916,175 @@ button.record-row {
   margin-bottom: 18px;
 }
 
-.login-shell {
+.auth-portal {
   display: grid;
-  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.4fr);
-  gap: 28px;
-  align-items: start;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 0.72fr);
+  gap: 32px;
+  align-items: stretch;
+  min-height: calc(100vh - 150px);
 }
 
-.login-copy {
-  padding: 28px 0;
+.auth-hero-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #c9d9d5;
+  border-radius: 24px;
+  padding: clamp(28px, 5vw, 56px);
+  background:
+    linear-gradient(140deg, rgb(255 255 255 / 82%), rgb(235 246 242 / 90%)),
+    linear-gradient(140deg, #f9fbf8 0%, #dbe9ef 100%);
+  box-shadow: 0 24px 70px rgb(16 34 58 / 14%);
+}
+
+.auth-hero-panel::after {
+  position: absolute;
+  right: 34px;
+  bottom: 34px;
+  width: 260px;
+  height: 180px;
+  border-top: 1px solid rgb(31 122 84 / 16%);
+  border-bottom: 1px solid rgb(16 34 58 / 10%);
+  background:
+    linear-gradient(90deg, rgb(16 34 58 / 8%) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(31 122 84 / 10%) 1px, transparent 1px);
+  background-size: 28px 28px;
+  content: "";
+  transform: rotate(-8deg);
+}
+
+.auth-brand {
+  display: inline-flex;
+  margin-bottom: 88px;
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.auth-hero-panel h1 {
+  position: relative;
+  max-width: 620px;
+  color: var(--ink);
+  font-size: clamp(2.6rem, 5vw, 4.9rem);
+  line-height: 0.95;
+}
+
+.auth-hero-panel p:not(.eyebrow) {
+  position: relative;
+  max-width: 560px;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.auth-highlights {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 34px;
+}
+
+.auth-highlights span {
+  border: 1px solid rgb(16 34 58 / 10%);
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: rgb(255 255 255 / 72%);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.auth-card {
+  align-self: center;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: clamp(22px, 4vw, 34px);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 24px 70px rgb(16 34 58 / 16%);
+}
+
+.auth-card-heading {
+  margin-bottom: 22px;
+}
+
+.auth-card-heading h2 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 2rem;
+}
+
+.auth-form {
+  display: grid;
+  gap: 15px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.auth-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 0.45fr);
+  gap: 12px;
+}
+
+.wide-button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.auth-message {
+  border: 1px solid rgb(31 122 84 / 18%);
+  border-radius: 12px;
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  background: #eef8f3;
+  color: var(--accent-dark);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.auth-switch {
+  margin: 20px 0 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.auth-switch a {
+  color: var(--accent-dark);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.school-picker {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.school-picker button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 14px;
+  background: var(--surface-muted);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.school-picker small {
+  color: var(--muted);
+  font-weight: 900;
 }
 
 .dashboard-shell {
@@ -1239,11 +1406,27 @@ button.record-row {
   }
 
   .landing-hero,
-  .login-shell,
+  .auth-portal,
+  .auth-form-row,
   .dashboard-shell,
   .overview-hero-panel,
   .operations-grid {
     grid-template-columns: 1fr;
+  }
+
+  .auth-hero-panel {
+    min-height: 420px;
+  }
+
+  .auth-brand {
+    margin-bottom: 56px;
+  }
+
+  .auth-hero-panel::after {
+    right: 20px;
+    bottom: 20px;
+    width: 180px;
+    height: 120px;
   }
 
   .landing-visual {
