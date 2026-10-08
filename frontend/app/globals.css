@@ -77,6 +77,59 @@ h2 {
   line-height: 1.6;
 }
 
+.app-workspace {
+  padding-top: 24px;
+}
+
+.module-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.module-nav button {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.module-nav button.active {
+  border-color: var(--accent);
+  background: var(--surface-muted);
+}
+
+.module-nav span {
+  font-weight: 800;
+}
+
+.module-nav small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.module-heading {
+  padding: 0 0 14px;
+}
+
+.module-heading h2 {
+  max-width: 720px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -686,6 +739,10 @@ button.record-row {
   }
 
   .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .module-nav {
     grid-template-columns: 1fr;
   }
 
