@@ -27,11 +27,11 @@ type SessionPayload = {
 type AppStage = "landing" | "login" | "dashboard";
 type DashboardView = "overview" | "academics" | "attendance" | "access";
 
-const dashboardViews: { id: DashboardView; label: string; detail: string }[] = [
-  { id: "overview", label: "Overview", detail: "Today" },
-  { id: "academics", label: "Academics", detail: "Records" },
-  { id: "attendance", label: "Attendance", detail: "Rosters" },
-  { id: "access", label: "Access", detail: "Session" },
+const dashboardViews: { id: DashboardView; label: string; detail: string; icon: string }[] = [
+  { id: "overview", label: "Overview", detail: "Today", icon: "OV" },
+  { id: "academics", label: "Academics", detail: "Records", icon: "AC" },
+  { id: "attendance", label: "Attendance", detail: "Rosters", icon: "AT" },
+  { id: "access", label: "Access", detail: "Session", icon: "ID" },
 ];
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -211,8 +211,11 @@ export function AppWorkspace() {
               className={dashboardView === view.id ? "active" : ""}
               onClick={() => setDashboardView(view.id)}
             >
-              <span>{view.label}</span>
-              <small>{view.detail}</small>
+              <span className="nav-icon">{view.icon}</span>
+              <span className="nav-copy">
+                <span>{view.label}</span>
+                <small>{view.detail}</small>
+              </span>
             </button>
           ))}
         </nav>
@@ -234,9 +237,18 @@ export function AppWorkspace() {
             <p className="eyebrow">Dashboard</p>
             <h1>{dashboardViews.find((view) => view.id === dashboardView)?.label}</h1>
           </div>
-          <button className="secondary-button" type="button" onClick={logout}>
-            Logout
-          </button>
+          <div className="topbar-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => setDashboardView("access")}
+            >
+              Account
+            </button>
+            <button className="logout-top-button" type="button" onClick={logout}>
+              Logout
+            </button>
+          </div>
         </header>
 
         <div className="dashboard-tabs" role="tablist" aria-label="Dashboard tabs">
@@ -255,56 +267,86 @@ export function AppWorkspace() {
           ))}
         </div>
 
-        {dashboardView === "overview" ? (
-          <section className="dashboard-overview" aria-labelledby="dashboard-overview-heading">
-            <div>
-              <p className="eyebrow">Today</p>
-              <h2 id="dashboard-overview-heading">Operations Overview</h2>
-            </div>
-            <div className="overview-grid">
-              <section className="metric-panel">
-                <p className="small-label">Attendance</p>
-                <strong>Live</strong>
-                <span>Open the Attendance tab to mark rosters</span>
-                <button
-                  className="metric-action"
-                  type="button"
-                  onClick={() => setDashboardView("attendance")}
-                >
-                  Open Attendance
-                </button>
-              </section>
-              <section className="metric-panel">
-                <p className="small-label">Students</p>
-                <strong>Profiles</strong>
-                <span>Directory and enrollment records</span>
-                <button
-                  className="metric-action"
-                  type="button"
-                  onClick={() => setDashboardView("academics")}
-                >
-                  Open Academics
-                </button>
-              </section>
-              <section className="metric-panel">
-                <p className="small-label">Setup</p>
-                <strong>Ready</strong>
-                <span>Years, grades, sections, subjects</span>
-              </section>
-              <section className="metric-panel">
-                <p className="small-label">Next</p>
-                <strong>Actions</strong>
-                <span>Rule-based follow-up is the next milestone</span>
-              </section>
-            </div>
-          </section>
-        ) : null}
+        <div className="dashboard-content" key={dashboardView}>
+          {dashboardView === "overview" ? (
+            <section className="dashboard-overview" aria-labelledby="dashboard-overview-heading">
+              <div className="overview-hero-panel">
+                <div>
+                  <p className="eyebrow">Today</p>
+                  <h2 id="dashboard-overview-heading">Operations Overview</h2>
+                  <p>
+                    Start with attendance, keep records clean, and move follow-up work into the next
+                    milestone.
+                  </p>
+                </div>
+                <section className="school-day-card" aria-label="School day status">
+                  <span>School day</span>
+                  <strong>Open</strong>
+                  <small>{session?.current_school?.name ?? "Dashboard preview"}</small>
+                </section>
+              </div>
 
-        {dashboardView === "academics" ? <SchoolSetupWorkspace /> : null}
-        {dashboardView === "attendance" ? <AttendanceWorkspace /> : null}
-        {dashboardView === "access" ? (
-          <AuthWorkspace onSessionChange={handleSessionChange} />
-        ) : null}
+              <div className="overview-grid">
+                <section className="metric-panel premium-card">
+                  <p className="small-label">Attendance</p>
+                  <strong>Live</strong>
+                  <span>Open the Attendance tab to mark rosters</span>
+                  <button
+                    className="metric-action"
+                    type="button"
+                    onClick={() => setDashboardView("attendance")}
+                  >
+                    Open Attendance
+                  </button>
+                </section>
+                <section className="metric-panel premium-card">
+                  <p className="small-label">Students</p>
+                  <strong>Profiles</strong>
+                  <span>Directory and enrollment records</span>
+                  <button
+                    className="metric-action"
+                    type="button"
+                    onClick={() => setDashboardView("academics")}
+                  >
+                    Open Academics
+                  </button>
+                </section>
+                <section className="metric-panel premium-card">
+                  <p className="small-label">Setup</p>
+                  <strong>Ready</strong>
+                  <span>Years, grades, sections, subjects</span>
+                </section>
+                <section className="metric-panel premium-card">
+                  <p className="small-label">Next</p>
+                  <strong>Actions</strong>
+                  <span>Rule-based follow-up is the next milestone</span>
+                </section>
+              </div>
+
+              <div className="operations-grid">
+                <section className="ops-panel">
+                  <p className="small-label">Suggested Workflow</p>
+                  <ol>
+                    <li>Confirm the school context in Access.</li>
+                    <li>Review active sections and enrollments in Academics.</li>
+                    <li>Mark today&apos;s attendance and finalize each roster.</li>
+                  </ol>
+                </section>
+                <section className="ops-panel accent-panel">
+                  <p className="small-label">Today&apos;s Focus</p>
+                  <strong>Attendance completion</strong>
+                  <span>Finalize every active section before follow-up rules run.</span>
+                </section>
+              </div>
+            </section>
+          ) : null}
+
+          {dashboardView === "academics" ? <SchoolSetupWorkspace /> : null}
+          {dashboardView === "attendance" ? <AttendanceWorkspace /> : null}
+          {dashboardView === "access" ? (
+            <AuthWorkspace onSessionChange={handleSessionChange} />
+          ) : null}
+        </div>
       </div>
     </section>
   );

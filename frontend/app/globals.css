@@ -964,14 +964,38 @@ button.record-row {
 
 .side-nav button {
   display: grid;
-  gap: 4px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
   padding: 12px;
+}
+
+.nav-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 10%);
+  color: #bff3df;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.nav-copy {
+  display: grid;
+  gap: 4px;
 }
 
 .side-nav button.active {
   border-color: rgb(255 255 255 / 18%);
   background: rgb(255 255 255 / 13%);
   box-shadow: inset 4px 0 0 #4fd1a1;
+}
+
+.side-nav button.active .nav-icon {
+  background: #4fd1a1;
+  color: #08251b;
 }
 
 .side-nav button:hover {
@@ -990,16 +1014,6 @@ button.record-row {
 }
 
 .side-nav small {
-  color: #b9cac8;
-}
-
-.dashboard-sidebar .brand-mark,
-.dashboard-sidebar .sidebar-session span {
-  color: #ffffff;
-}
-
-.dashboard-sidebar .sidebar-brand small,
-.dashboard-sidebar .sidebar-session small {
   color: #b9cac8;
 }
 
@@ -1022,6 +1036,18 @@ button.record-row {
   font-weight: 800;
 }
 
+.logout-top-button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 14px;
+  background: var(--ink);
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
 .dashboard-topbar {
   display: flex;
   align-items: center;
@@ -1034,6 +1060,12 @@ button.record-row {
   margin-bottom: 0;
   color: var(--ink);
   font-size: 2.2rem;
+}
+
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .dashboard-tabs {
@@ -1050,9 +1082,110 @@ button.record-row {
   font-weight: 800;
 }
 
+.dashboard-content {
+  min-height: 420px;
+}
+
 .dashboard-overview {
   display: grid;
   gap: 16px;
+}
+
+.overview-hero-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  background:
+    linear-gradient(135deg, rgb(238 247 243 / 92%), rgb(238 245 251 / 92%)), var(--surface);
+}
+
+.overview-hero-panel h2 {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 1.35rem;
+}
+
+.overview-hero-panel p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.school-day-card {
+  border: 1px solid rgb(8 127 91 / 16%);
+  border-radius: 16px;
+  padding: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 26px rgb(16 34 58 / 8%);
+}
+
+.school-day-card span,
+.school-day-card small {
+  display: block;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.school-day-card strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--accent-dark);
+  font-size: 2rem;
+}
+
+.premium-card {
+  box-shadow: 0 14px 34px rgb(16 34 58 / 8%);
+}
+
+.operations-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+}
+
+.ops-panel {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  background: var(--surface);
+}
+
+.ops-panel ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.accent-panel {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.accent-panel .small-label,
+.accent-panel span {
+  color: #b9cac8;
+}
+
+.accent-panel strong {
+  display: block;
+  margin: 10px 0;
+  font-size: 1.55rem;
+}
+
+.dashboard-sidebar .brand-mark,
+.dashboard-sidebar .sidebar-session span {
+  color: #ffffff;
+}
+
+.dashboard-sidebar .sidebar-brand small,
+.dashboard-sidebar .sidebar-session small {
+  color: #b9cac8;
 }
 
 @keyframes panelFloat {
@@ -1101,7 +1234,9 @@ button.record-row {
 
   .landing-hero,
   .login-shell,
-  .dashboard-shell {
+  .dashboard-shell,
+  .overview-hero-panel,
+  .operations-grid {
     grid-template-columns: 1fr;
   }
 
