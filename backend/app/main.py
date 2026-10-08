@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.academics.routes import router as academics_router
+from app.attendance.routes import router as attendance_router
 from app.core.config import get_settings
 from app.identity.routes import router as identity_router
 from app.students.routes import router as students_router
@@ -40,3 +41,4 @@ def api_health() -> dict[str, str]:
 app.include_router(identity_router)
 app.include_router(academics_router)
 app.include_router(students_router)
+app.include_router(attendance_router)

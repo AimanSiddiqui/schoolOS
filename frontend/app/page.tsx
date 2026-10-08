@@ -1,3 +1,4 @@
+import { AttendanceWorkspace } from "./ui/attendance-workspace";
 import { AuthWorkspace } from "./ui/auth-workspace";
 import { SchoolSetupWorkspace } from "./ui/school-setup-workspace";
 
@@ -16,6 +17,7 @@ export default function Home() {
 
         <AuthWorkspace />
         <SchoolSetupWorkspace />
+        <AttendanceWorkspace />
       </section>
     </main>
   );

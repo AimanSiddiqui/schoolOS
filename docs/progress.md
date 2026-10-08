@@ -122,10 +122,29 @@ Local checks completed:
 
 ### Milestone 4: Attendance Vertical Slice
 
-- [ ] Build today's sections and attendance roster UI.
-- [ ] Implement draft save, finalize, correction, and summaries.
-- [ ] Handle missing marks, duplicate requests, date/timezone rules, and historical rosters.
+- [x] Build today's sections and attendance roster UI.
+- [x] Implement draft save, finalize, correction, and summaries.
+- [x] Handle missing marks, duplicate finalize requests, school-local date defaults, and historical rosters.
 - [ ] Create audit entries and transactional outbox events on meaningful transitions.
+
+Completed slice:
+
+- Added `attendance_sessions` and `attendance_records` models and migration.
+- Added admin/assigned-teacher attendance APIs for section summaries, roster loading, draft save,
+  finalization, and finalized-record correction.
+- Added attendance workspace UI with date/section selection, roster marks, draft save, finalization,
+  and correction controls.
+- Added backend tests for attendance save/finalize/correction and assigned-section teacher scoping.
+- Added frontend tests for attendance loading, draft save, finalization, and role-context blocking.
+
+Local checks completed:
+
+- `backend/.venv/Scripts/python.exe -m ruff check backend`: passed.
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests`: passed, 16 tests, upstream TestClient warnings.
+- `frontend npm run lint`: passed.
+- `frontend npm run test`: passed, 11 tests.
+- `frontend npm run typecheck`: passed.
+- `frontend npm run build`: passed.
 
 ### Milestone 5: Rule, Action Inbox, And Timeline
 

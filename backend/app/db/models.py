@@ -233,6 +233,9 @@ class Section(Base):
         back_populates="section"
     )
     enrollments: Mapped[list["Enrollment"]] = orm_relationship(back_populates="section")
+    attendance_sessions: Mapped[list["AttendanceSession"]] = orm_relationship(
+        back_populates="section"
+    )
 
 
 class Subject(Base):
@@ -335,6 +338,9 @@ class Student(Base):
     school: Mapped[School] = orm_relationship()
     enrollments: Mapped[list["Enrollment"]] = orm_relationship(back_populates="student")
     guardian_links: Mapped[list["StudentGuardian"]] = orm_relationship(back_populates="student")
+    attendance_records: Mapped[list["AttendanceRecord"]] = orm_relationship(
+        back_populates="student"
+    )
 
 
 class Guardian(Base):
@@ -456,3 +462,106 @@ class Enrollment(Base):
     school: Mapped[School] = orm_relationship()
     student: Mapped[Student] = orm_relationship(back_populates="enrollments")
     section: Mapped[Section] = orm_relationship(back_populates="enrollments")
+
+
+class AttendanceSession(Base):
+    __tablename__ = "attendance_sessions"
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "section_id",
+            "school_date",
+            name="uq_attendance_sessions_school_section_date",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    school_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("schools.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    section_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("sections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    school_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="DRAFT")
+    finalized_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    finalized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    school: Mapped[School] = orm_relationship()
+    section: Mapped[Section] = orm_relationship(back_populates="attendance_sessions")
+    finalized_by: Mapped[User | None] = orm_relationship()
+    records: Mapped[list["AttendanceRecord"]] = orm_relationship(back_populates="session")
+
+
+class AttendanceRecord(Base):
+    __tablename__ = "attendance_records"
+    __table_args__ = (
+        UniqueConstraint("session_id", "student_id", name="uq_attendance_records_session_student"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    school_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("schools.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("attendance_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    mark: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    marked_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    marked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    correction_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    corrected_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    corrected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    school: Mapped[School] = orm_relationship()
+    session: Mapped[AttendanceSession] = orm_relationship(back_populates="records")
+    student: Mapped[Student] = orm_relationship(back_populates="attendance_records")
+    marked_by: Mapped[User | None] = orm_relationship(foreign_keys=[marked_by_user_id])
+    corrected_by: Mapped[User | None] = orm_relationship(foreign_keys=[corrected_by_user_id])

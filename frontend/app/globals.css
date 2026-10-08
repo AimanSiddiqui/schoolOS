@@ -363,6 +363,100 @@ button:disabled {
   padding-top: 18px;
 }
 
+.attendance-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
+  gap: 16px;
+  padding-top: 18px;
+}
+
+.attendance-control-panel,
+.attendance-roster-panel {
+  min-height: auto;
+}
+
+.attendance-section-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.attendance-section-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.attendance-section-list button.active {
+  border-color: var(--accent);
+  background: var(--surface-muted);
+}
+
+.status-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.attendance-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.attendance-metrics span {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.attendance-records {
+  display: grid;
+  gap: 8px;
+}
+
+.attendance-record {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 140px minmax(140px, 1fr) minmax(140px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.attendance-record strong,
+.attendance-record span {
+  display: block;
+}
+
+.attendance-record span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.attendance-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
 .setup-panel {
   min-height: auto;
 }
@@ -610,6 +704,12 @@ button.record-row {
   }
 
   .setup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-layout,
+  .attendance-metrics,
+  .attendance-record {
     grid-template-columns: 1fr;
   }
 

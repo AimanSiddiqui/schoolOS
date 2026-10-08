@@ -4,7 +4,7 @@ SchoolOS is a local-first school-management MVP focused on attendance, follow-up
 
 ## Current Status
 
-Milestones 0 through 2 are complete, and Milestone 3 has the academics/student directory slice:
+Milestones 0 through 3 are complete, and Milestone 4 has the first attendance slice:
 
 - FastAPI backend with health endpoints.
 - Next.js frontend shell with a live backend health check.
@@ -17,6 +17,7 @@ Milestones 0 through 2 are complete, and Milestone 3 has the academics/student d
 - Academic setup maintenance, including edit/deactivate flows for years, grade levels, sections, subjects, and teacher assignments.
 - Enrollment end-date/status edits and guardian-link relationship/portal edits.
 - Tabbed admin workspace views for overview, academic setup, directory, student profile, and maintenance.
+- Attendance sessions, roster loading, draft save, finalization, corrections, section summaries, and admin/teacher-scoped attendance UI.
 
 ## Requirements
 
