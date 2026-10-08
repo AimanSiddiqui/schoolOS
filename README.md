@@ -18,6 +18,7 @@ Milestones 0 through 3 are complete, and Milestone 4 has the first attendance sl
 - Enrollment end-date/status edits and guardian-link relationship/portal edits.
 - Tabbed admin workspace views for overview, academic setup, directory, student profile, and maintenance.
 - Attendance sessions, roster loading, draft save, finalization, corrections, section summaries, and admin/teacher-scoped attendance UI.
+- Product shell with animated landing page, focused login flow, and authenticated dashboard navigation with side rail and tabs.
 
 ## Requirements
 

@@ -7,6 +7,8 @@
   --line: #d9e1dc;
   --accent: #1f7a54;
   --accent-dark: #155d40;
+  --accent-blue: #295f98;
+  --accent-gold: #b7791f;
   --danger: #b42318;
 }
 
@@ -733,9 +735,312 @@ button.record-row {
   font-weight: 700;
 }
 
+.landing-page,
+.login-page,
+.dashboard-shell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0 32px;
+}
+
+.brand-mark {
+  display: block;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.landing-header p,
+.sidebar-brand small,
+.sidebar-session small {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1fr);
+  gap: 48px;
+  align-items: center;
+  min-height: calc(100vh - 130px);
+}
+
+.landing-copy h1 {
+  max-width: 760px;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.landing-visual {
+  position: relative;
+  min-height: 460px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  background: #fdfdfb;
+  box-shadow: 0 24px 70px rgb(29 37 33 / 12%);
+}
+
+.visual-topbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.visual-topbar span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.visual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.visual-panel {
+  min-height: 136px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--surface);
+  animation: panelFloat 5s ease-in-out infinite;
+}
+
+.visual-panel small,
+.visual-panel span {
+  display: block;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.visual-panel strong {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 2.2rem;
+}
+
+.attendance-preview {
+  border-top: 4px solid var(--accent);
+}
+
+.profile-preview {
+  border-top: 4px solid var(--accent-blue);
+  animation-delay: 0.45s;
+}
+
+.action-preview {
+  grid-column: 1 / -1;
+  border-top: 4px solid var(--accent-gold);
+  animation-delay: 0.9s;
+}
+
+.visual-roster {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.visual-roster span {
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d9e1dc 0%, #f2f5f1 52%, #d9e1dc 100%);
+  background-size: 220% 100%;
+  animation: rosterScan 2.7s linear infinite;
+}
+
+.visual-roster span:nth-child(2) {
+  width: 86%;
+}
+
+.visual-roster span:nth-child(3) {
+  width: 92%;
+}
+
+.visual-roster span:nth-child(4) {
+  width: 76%;
+}
+
+.login-page > .secondary-button {
+  margin-bottom: 18px;
+}
+
+.login-shell {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.4fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.login-copy {
+  padding: 28px 0;
+}
+
+.dashboard-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 18px;
+  min-height: calc(100vh - 64px);
+}
+
+.dashboard-sidebar,
+.dashboard-main {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.dashboard-sidebar {
+  position: sticky;
+  top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  min-height: calc(100vh - 64px);
+  padding: 18px;
+}
+
+.side-nav {
+  display: grid;
+  gap: 8px;
+  margin: 26px 0;
+}
+
+.side-nav button,
+.dashboard-tabs button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.side-nav button {
+  display: grid;
+  gap: 4px;
+  padding: 11px;
+}
+
+.side-nav button.active,
+.dashboard-tabs button.active {
+  border-color: var(--accent);
+  background: var(--surface-muted);
+}
+
+.side-nav span,
+.sidebar-session span {
+  font-weight: 800;
+}
+
+.side-nav small {
+  color: var(--muted);
+}
+
+.sidebar-session {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.dashboard-main {
+  min-width: 0;
+  padding: 22px;
+}
+
+.dashboard-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.dashboard-topbar h1 {
+  margin-bottom: 0;
+  font-size: 2.2rem;
+}
+
+.dashboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+}
+
+.dashboard-tabs button {
+  padding: 9px 12px;
+  font-weight: 800;
+}
+
+.dashboard-overview {
+  display: grid;
+  gap: 16px;
+}
+
+@keyframes panelFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rosterScan {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
 @media (max-width: 760px) {
   .page-shell {
     padding: 20px;
+  }
+
+  .landing-header,
+  .dashboard-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .landing-hero,
+  .login-shell,
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-visual {
+    min-height: 360px;
+  }
+
+  .dashboard-sidebar {
+    position: static;
+    min-height: auto;
   }
 
   .status-grid {

@@ -27,6 +27,10 @@ type SessionPayload = {
   current_role: string | null;
 };
 
+type AuthWorkspaceProps = {
+  onSessionChange?: (session: SessionPayload) => void;
+};
+
 const emptySession: SessionPayload = {
   authenticated: false,
   user: null,
@@ -67,7 +71,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function AuthWorkspace() {
+export function AuthWorkspace({ onSessionChange }: AuthWorkspaceProps = {}) {
   const [session, setSession] = useState<SessionPayload>(emptySession);
   const [mode, setMode] = useState<"onboard" | "login">("login");
   const [message, setMessage] = useState("Checking session...");
@@ -77,11 +81,12 @@ export function AuthWorkspace() {
     try {
       const payload = await apiRequest<SessionPayload>("/auth/session");
       setSession(payload);
+      onSessionChange?.(payload);
       setMessage(payload.authenticated ? "Session loaded." : "No active session.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to load session.");
     }
-  }, []);
+  }, [onSessionChange]);
 
   useEffect(() => {
     refreshSession();
@@ -105,6 +110,7 @@ export function AuthWorkspace() {
         }),
       });
       setSession(payload);
+      onSessionChange?.(payload);
       setMessage("School created and admin signed in.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to create school.";
@@ -133,6 +139,7 @@ export function AuthWorkspace() {
         }),
       });
       setSession(payload);
+      onSessionChange?.(payload);
       setMessage("Signed in.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to sign in.");
@@ -150,6 +157,7 @@ export function AuthWorkspace() {
         body: JSON.stringify({ school_id: schoolId }),
       });
       setSession(payload);
+      onSessionChange?.(payload);
       setMessage("School context selected.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to select school.");
@@ -164,6 +172,7 @@ export function AuthWorkspace() {
     try {
       await apiRequest<void>("/auth/logout", { method: "POST" });
       setSession(emptySession);
+      onSessionChange?.(emptySession);
       setMessage("Signed out.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to sign out.");

@@ -163,6 +163,7 @@ Local checks completed:
 
 ### Milestone 7: MVP Polish And Verification
 
+- [x] Add landing, login, and dashboard shell structure with side navigation and tabs.
 - [ ] Build role-specific navigation and school overview with real aggregates.
 - [ ] Add loading, empty, validation, forbidden, and error states.
 - [ ] Check keyboard access, labels, responsive layout, and accessible status colors.
