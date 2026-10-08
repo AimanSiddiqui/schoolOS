@@ -34,10 +34,11 @@ const dashboardViews: { id: DashboardView; label: string; detail: string }[] = [
   { id: "access", label: "Access", detail: "Session" },
 ];
 
-async function apiRequest<T>(path: string): Promise<T> {
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/backend${path}`, {
+    ...init,
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (!response.ok) {
     throw new Error(`Request failed with ${response.status}`);
@@ -86,6 +87,17 @@ export function AppWorkspace() {
       setDashboardView("overview");
     }
   }, []);
+
+  async function logout() {
+    try {
+      await apiRequest<void>("/auth/logout", { method: "POST" });
+    } catch {
+      // A local logout should still clear the client shell if the session is already gone.
+    }
+    setSession(null);
+    setDashboardView("overview");
+    setStage("landing");
+  }
 
   if (stage === "landing") {
     return (
@@ -194,6 +206,8 @@ export function AppWorkspace() {
             <button
               key={view.id}
               type="button"
+              aria-label={`Navigate to ${view.label}`}
+              aria-pressed={dashboardView === view.id}
               className={dashboardView === view.id ? "active" : ""}
               onClick={() => setDashboardView(view.id)}
             >
@@ -204,8 +218,13 @@ export function AppWorkspace() {
         </nav>
 
         <div className="sidebar-session">
-          <span>{session?.user?.display_name ?? "Demo shell"}</span>
-          <small>{session?.current_role ?? "Preview"}</small>
+          <div>
+            <span>{session?.user?.display_name ?? "Demo shell"}</span>
+            <small>{session?.current_role ?? "Preview"}</small>
+          </div>
+          <button className="logout-button" type="button" onClick={logout}>
+            Logout
+          </button>
         </div>
       </aside>
 
@@ -215,12 +234,8 @@ export function AppWorkspace() {
             <p className="eyebrow">Dashboard</p>
             <h1>{dashboardViews.find((view) => view.id === dashboardView)?.label}</h1>
           </div>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setDashboardView("access")}
-          >
-            Account
+          <button className="secondary-button" type="button" onClick={logout}>
+            Logout
           </button>
         </header>
 
@@ -230,6 +245,7 @@ export function AppWorkspace() {
               key={view.id}
               type="button"
               role="tab"
+              aria-label={`Show ${view.label}`}
               aria-selected={dashboardView === view.id}
               className={dashboardView === view.id ? "active" : ""}
               onClick={() => setDashboardView(view.id)}
@@ -250,11 +266,25 @@ export function AppWorkspace() {
                 <p className="small-label">Attendance</p>
                 <strong>Live</strong>
                 <span>Open the Attendance tab to mark rosters</span>
+                <button
+                  className="metric-action"
+                  type="button"
+                  onClick={() => setDashboardView("attendance")}
+                >
+                  Open Attendance
+                </button>
               </section>
               <section className="metric-panel">
                 <p className="small-label">Students</p>
                 <strong>Profiles</strong>
                 <span>Directory and enrollment records</span>
+                <button
+                  className="metric-action"
+                  type="button"
+                  onClick={() => setDashboardView("academics")}
+                >
+                  Open Academics
+                </button>
               </section>
               <section className="metric-panel">
                 <p className="small-label">Setup</p>

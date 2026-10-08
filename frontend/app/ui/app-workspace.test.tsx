@@ -54,8 +54,11 @@ describe("AppWorkspace", () => {
     vi.unstubAllGlobals();
     vi.stubGlobal(
       "fetch",
-      vi.fn(() =>
-        Promise.resolve(
+      vi.fn((_input, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          return Promise.resolve(new Response(null, { status: 204 }));
+        }
+        return Promise.resolve(
           jsonResponse({
             authenticated: false,
             user: null,
@@ -63,8 +66,8 @@ describe("AppWorkspace", () => {
             current_school: null,
             current_role: null,
           }),
-        ),
-      ),
+        );
+      }),
     );
   });
 
@@ -85,13 +88,17 @@ describe("AppWorkspace", () => {
     expect(screen.queryByText("Academics module mounted")).not.toBeInTheDocument();
     expect(screen.queryByText("Attendance module mounted")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Academics/ }));
+    await user.click(screen.getByRole("tab", { name: "Show Academics" }));
 
     expect(screen.getByText("Academics module mounted")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Attendance/ }));
+    await user.click(screen.getByRole("button", { name: "Navigate to Attendance" }));
 
     expect(screen.queryByText("Academics module mounted")).not.toBeInTheDocument();
     expect(screen.getByText("Attendance module mounted")).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: "Logout" })[0]);
+
+    expect(screen.getByText("Run the school day from one calm dashboard.")).toBeInTheDocument();
   });
 });
