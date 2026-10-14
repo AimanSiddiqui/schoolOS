@@ -171,7 +171,9 @@ describe("AppWorkspace", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Logout" })[0]);
 
-    expect(screen.getByText("Run the school day from one calm dashboard.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Run attendance, academics, and school operations beautifully."),
+    ).toBeInTheDocument();
   });
 
   it("renders the dedicated signup experience", () => {

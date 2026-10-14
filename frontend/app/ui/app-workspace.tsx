@@ -112,6 +112,11 @@ export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {
             <span className="brand-mark">SchoolOS</span>
             <p>Student operations, attendance, and follow-up in one local workspace.</p>
           </div>
+          <nav className="landing-nav" aria-label="Public navigation">
+            <a href="#modules">Modules</a>
+            <a href="#workflow">Workflow</a>
+            <a href="#preview">Preview</a>
+          </nav>
           <div className="landing-header-actions">
             <Link className="secondary-button" href="/login">
               Login
@@ -125,11 +130,27 @@ export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {
         <div className="landing-hero">
           <div className="landing-copy">
             <p className="eyebrow">School management system</p>
-            <h1 id="landing-heading">Run the school day from one calm dashboard.</h1>
+            <h1 id="landing-heading">
+              Run attendance, academics, and school operations beautifully.
+            </h1>
             <p className="summary">
-              Manage academic setup, student profiles, attendance rosters, and follow-up workflows
-              from a role-aware workspace built for administrators and teachers.
+              SchoolOS gives administrators and teachers a focused operating layer for student
+              records, rosters, daily attendance, and follow-up workflows.
             </p>
+            <section className="landing-proof" aria-label="SchoolOS operational highlights">
+              <div>
+                <strong>92%</strong>
+                <span>Attendance marked</span>
+              </div>
+              <div>
+                <strong>128</strong>
+                <span>Active students</span>
+              </div>
+              <div>
+                <strong>6</strong>
+                <span>Follow-ups open</span>
+              </div>
+            </section>
             <div className="landing-actions">
               <Link className="primary-button" href="/login">
                 Log in
@@ -150,37 +171,90 @@ export function AppWorkspace({ initialStage = "landing" }: AppWorkspaceProps = {
             </div>
           </div>
 
-          <div className="landing-visual" aria-hidden="true">
-            <div className="visual-topbar">
+          <div id="preview" className="landing-visual" aria-hidden="true">
+            <div className="visual-sidebar">
+              <span className="visual-logo">S</span>
               <span />
               <span />
               <span />
             </div>
-            <div className="visual-grid">
-              <div className="visual-panel attendance-preview">
-                <small>Attendance</small>
-                <strong>92%</strong>
-                <span>Marked today</span>
+            <div className="visual-desktop">
+              <div className="visual-topbar">
+                <span />
+                <span />
+                <span />
               </div>
-              <div className="visual-panel profile-preview">
-                <small>Profiles</small>
-                <strong>128</strong>
-                <span>Active students</span>
+              <div className="visual-grid">
+                <div className="visual-panel attendance-preview">
+                  <small>Attendance</small>
+                  <strong>92%</strong>
+                  <span>Marked today</span>
+                </div>
+                <div className="visual-panel profile-preview">
+                  <small>Profiles</small>
+                  <strong>128</strong>
+                  <span>Active students</span>
+                </div>
+                <div className="visual-panel action-preview">
+                  <small>Follow-up</small>
+                  <strong>6</strong>
+                  <span>Open actions</span>
+                </div>
               </div>
-              <div className="visual-panel action-preview">
-                <small>Follow-up</small>
-                <strong>6</strong>
-                <span>Open actions</span>
+              <div className="visual-roster">
+                <span />
+                <span />
+                <span />
+                <span />
               </div>
-            </div>
-            <div className="visual-roster">
-              <span />
-              <span />
-              <span />
-              <span />
             </div>
           </div>
         </div>
+
+        <section id="modules" className="landing-section" aria-labelledby="modules-heading">
+          <div>
+            <p className="eyebrow">Modules</p>
+            <h2 id="modules-heading">Built around the school day.</h2>
+          </div>
+          <div className="landing-module-grid">
+            <article>
+              <span>01</span>
+              <h3>Student records</h3>
+              <p>
+                Profiles, memberships, sections, and academic setup stay in one organized workspace.
+              </p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Attendance rosters</h3>
+              <p>Teachers mark the day quickly while administrators keep a live operations view.</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Follow-up work</h3>
+              <p>
+                Open actions are visible before they drift into hallway conversations and
+                spreadsheets.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="workflow"
+          className="landing-section workflow-section"
+          aria-labelledby="workflow-heading"
+        >
+          <div>
+            <p className="eyebrow">Workflow</p>
+            <h2 id="workflow-heading">From first bell to final follow-up.</h2>
+          </div>
+          <ol className="workflow-steps">
+            <li>Open the school dashboard and confirm today&apos;s context.</li>
+            <li>Review academic sections and student membership changes.</li>
+            <li>Mark attendance, resolve exceptions, and hand off follow-up work.</li>
+          </ol>
+        </section>
       </section>
     );
   }
