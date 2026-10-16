@@ -3,6 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppWorkspace } from "./app-workspace";
 
+const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
+
 vi.mock("./auth-portal", () => ({
   AuthPortal: ({
     mode,
@@ -116,6 +119,8 @@ function jsonResponse(payload: unknown, status = 200): Response {
 
 describe("AppWorkspace", () => {
   beforeEach(() => {
+    navigation.replace.mockReset();
+    window.history.replaceState(null, "", "/");
     vi.unstubAllGlobals();
     vi.stubGlobal(
       "fetch",
@@ -144,7 +149,7 @@ describe("AppWorkspace", () => {
     expect(screen.getAllByRole("link", { name: "Sign up" })[0]).toHaveAttribute("href", "/signup");
   });
 
-  it("moves from direct login to a tabbed dashboard", async () => {
+  it("keeps signed-out users on login and navigates after authentication", async () => {
     const user = userEvent.setup();
 
     render(<AppWorkspace initialStage="login" />);
@@ -155,25 +160,21 @@ describe("AppWorkspace", () => {
 
     await user.click(screen.getByRole("button", { name: "Complete login" }));
 
-    expect(await screen.findByText("Operations Overview")).toBeInTheDocument();
-    expect(screen.queryByText("Access module mounted")).not.toBeInTheDocument();
-    expect(screen.queryByText("Academics module mounted")).not.toBeInTheDocument();
-    expect(screen.queryByText("Attendance module mounted")).not.toBeInTheDocument();
+    expect(navigation.replace).toHaveBeenCalledWith("/dashboard");
+  });
 
-    await user.click(screen.getByRole("tab", { name: "Show Academics" }));
+  it("returns to the requested school page after login", async () => {
+    window.history.replaceState(null, "", "/login?next=%2Fdashboard%2Fattendance");
+    render(<AppWorkspace initialStage="login" />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Complete login" }));
+    expect(navigation.replace).toHaveBeenCalledWith("/dashboard/attendance");
+  });
 
-    expect(screen.getByText("Academics module mounted")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Navigate to Attendance" }));
-
-    expect(screen.queryByText("Academics module mounted")).not.toBeInTheDocument();
-    expect(screen.getByText("Attendance module mounted")).toBeInTheDocument();
-
-    await user.click(screen.getAllByRole("button", { name: "Logout" })[0]);
-
-    expect(
-      screen.getByText("Run attendance, academics, and school operations beautifully."),
-    ).toBeInTheDocument();
+  it("ignores external return destinations", async () => {
+    window.history.replaceState(null, "", "/login?next=https%3A%2F%2Fexample.com");
+    render(<AppWorkspace initialStage="login" />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Complete login" }));
+    expect(navigation.replace).toHaveBeenCalledWith("/dashboard");
   });
 
   it("renders the dedicated signup experience", () => {

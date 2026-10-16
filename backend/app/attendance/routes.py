@@ -1,16 +1,18 @@
 from datetime import UTC, date, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.attendance.events import record_transition
 from app.attendance.schemas import (
     VALID_ATTENDANCE_MARKS,
     AttendanceCorrection,
     AttendanceDraftSave,
+    AttendanceHistoryEntry,
+    AttendanceHistoryPage,
     AttendanceRosterRecord,
     AttendanceSectionSummary,
     AttendanceSessionRead,
@@ -18,6 +20,7 @@ from app.attendance.schemas import (
 from app.db.models import (
     AttendanceRecord,
     AttendanceSession,
+    AuditEntry,
     Enrollment,
     Section,
     Student,
@@ -116,6 +119,7 @@ def load_session(
             AttendanceSession.school_date == school_date,
         )
         .options(selectinload(AttendanceSession.records))
+        .execution_options(populate_existing=True)
     )
 
 
@@ -126,6 +130,13 @@ def get_or_create_session(
     section_id: UUID,
     school_date: date,
 ) -> AttendanceSession:
+    # Lock the stable parent even when today's session does not exist yet. All
+    # attendance mutations take this lock, including corrections and draft saves.
+    db.execute(
+        select(Section.id)
+        .where(Section.id == section_id, Section.school_id == school_id)
+        .with_for_update()
+    ).scalar_one()
     session = load_session(
         db,
         school_id=school_id,
@@ -141,18 +152,7 @@ def get_or_create_session(
         status="DRAFT",
     )
     db.add(session)
-    try:
-        db.flush()
-    except IntegrityError:
-        db.rollback()
-        session = load_session(
-            db,
-            school_id=school_id,
-            section_id=section_id,
-            school_date=school_date,
-        )
-        if session is None:
-            raise
+    db.flush()
     return session
 
 
@@ -218,6 +218,7 @@ def save_records(
     roster_ids = {student.id for student in roster}
     records_by_student = {record.student_id: record for record in session.records}
     stamped_at = now_utc()
+    changes = []
     for item in payload.records:
         if item.student_id not in roster_ids:
             raise HTTPException(
@@ -225,18 +226,41 @@ def save_records(
                 detail="Attendance record student is not on the selected roster",
             )
         record = records_by_student.get(item.student_id)
+        previous_mark = record.mark if record is not None else None
+        previous_note = record.note if record is not None else None
+        if (previous_mark, previous_note) == (item.mark, item.note):
+            continue
         if record is None:
             record = AttendanceRecord(
+                id=uuid4(),
                 school_id=context.school.id,
                 session_id=session.id,
                 student_id=item.student_id,
             )
             db.add(record)
             session.records.append(record)
+        changes.append(
+            {
+                "record_id": str(record.id),
+                "student_id": str(item.student_id),
+                "before_mark": previous_mark,
+                "after_mark": item.mark,
+                "note_changed": previous_note != item.note,
+            }
+        )
         record.mark = item.mark
         record.note = item.note
         record.marked_by_user_id = context.user.id
         record.marked_at = stamped_at
+    if changes:
+        record_transition(
+            db,
+            context=context,
+            session=session,
+            operation="attendance.draft_saved",
+            changes={"records": changes},
+            occurred_at=stamped_at,
+        )
 
 
 @router.get("/sections", response_model=list[AttendanceSectionSummary])
@@ -272,6 +296,55 @@ def list_attendance_sections(
             )
         )
     return summaries
+
+
+@router.get("/sections/{section_id}/history", response_model=AttendanceHistoryPage)
+def get_attendance_history(
+    section_id: UUID,
+    school_date: date | None = None,
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    context: SchoolContext = Depends(require_school_context),
+    db: Session = Depends(get_db),
+) -> AttendanceHistoryPage:
+    section = load_section(db, context, section_id)
+    session = load_session(
+        db,
+        school_id=context.school.id,
+        section_id=section.id,
+        school_date=selected_date(context, school_date),
+    )
+    if session is None:
+        return AttendanceHistoryPage(entries=[], has_more=False)
+    entries = list(
+        db.scalars(
+            select(AuditEntry)
+            .where(
+                AuditEntry.school_id == context.school.id,
+                AuditEntry.target_type == "AttendanceSession",
+                AuditEntry.target_id == session.id,
+            )
+            .options(selectinload(AuditEntry.actor))
+            .order_by(AuditEntry.occurred_at.desc(), AuditEntry.id.desc())
+            .offset(offset)
+            .limit(limit + 1)
+        )
+    )
+    return AttendanceHistoryPage(
+        entries=[
+            AttendanceHistoryEntry(
+                id=entry.id,
+                operation=entry.operation,
+                actor_name=entry.actor.display_name if entry.actor else None,
+                occurred_at=entry.occurred_at.replace(tzinfo=UTC)
+                if entry.occurred_at.tzinfo is None
+                else entry.occurred_at,
+                changes=entry.changes,
+            )
+            for entry in entries[:limit]
+        ],
+        has_more=len(entries) > limit,
+    )
 
 
 @router.get("/sections/{section_id}", response_model=AttendanceSessionRead)
@@ -365,6 +438,24 @@ def finalize_attendance(
     session.status = "FINAL"
     session.finalized_by_user_id = context.user.id
     session.finalized_at = now_utc()
+    record_transition(
+        db,
+        context=context,
+        session=session,
+        operation="attendance.finalized",
+        changes={"before_status": "DRAFT", "after_status": "FINAL"},
+        occurred_at=session.finalized_at,
+        event_payload={
+            "records": [
+                {
+                    "record_id": str(record.id),
+                    "student_id": str(record.student_id),
+                    "mark": record.mark,
+                }
+                for record in session.records
+            ]
+        },
+    )
     db.commit()
     db.refresh(session)
     return serialize_session(session, section, roster)
@@ -389,22 +480,51 @@ def correct_attendance_record(
             detail="Attendance record not found",
         )
     section = load_section(db, context, record.session.section_id)
-    if record.session.status != "FINAL":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Corrections are available after attendance is finalized",
-        )
-    record.mark = payload.mark
-    record.note = payload.note
-    record.correction_reason = payload.reason
-    record.corrected_by_user_id = context.user.id
-    record.corrected_at = now_utc()
-    db.commit()
-    db.refresh(record.session)
-    roster = roster_students(
+    session = get_or_create_session(
         db,
         school_id=context.school.id,
         section_id=section.id,
         school_date=record.session.school_date,
     )
+    if session.status != "FINAL":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Corrections are available after attendance is finalized",
+        )
+    roster = roster_students(
+        db,
+        school_id=context.school.id,
+        section_id=section.id,
+        school_date=session.school_date,
+    )
+    if (record.mark, record.note) == (payload.mark, payload.note):
+        return serialize_session(session, section, roster)
+    previous_mark, previous_note = record.mark, record.note
+    record.mark = payload.mark
+    record.note = payload.note
+    record.correction_reason = payload.reason
+    record.corrected_by_user_id = context.user.id
+    record.corrected_at = now_utc()
+    record_transition(
+        db,
+        context=context,
+        session=session,
+        operation="attendance.corrected",
+        changes={
+            "record_id": str(record.id),
+            "student_id": str(record.student_id),
+            "before_mark": previous_mark,
+            "after_mark": record.mark,
+            "note_changed": previous_note != record.note,
+            "reason": payload.reason,
+        },
+        occurred_at=record.corrected_at,
+        event_payload={
+            "record_id": str(record.id),
+            "student_id": str(record.student_id),
+            "mark": record.mark,
+        },
+    )
+    db.commit()
+    db.refresh(record.session)
     return serialize_session(record.session, section, roster)

@@ -30,6 +30,7 @@ Authorization should answer:
 | Approve message drafts | Yes | Authorized assigned actions | No |
 | View timeline | School scope | Assigned student scope | Guardian-visible linked child entries |
 | View audit logs | Authorized admin scope | No | No |
+| View register correction history | School scope | Assigned section scope | No |
 
 ## Resource Scope Rules
 
@@ -100,4 +101,3 @@ Shows linked children, guardian-visible timeline entries, notifications, and del
 ### Audit Log
 
 Admin-only table with actor, operation, target, timestamp, and redacted change summary. It should be searchable by student or domain object later.
-

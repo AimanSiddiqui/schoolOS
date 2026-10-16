@@ -2,7 +2,11 @@
 
 ## Current State
 
-Milestones 0 through 2 are complete. Milestone 3 now has a tested academics, maintenance, and student directory/profile slice.
+Milestones 0 through 5 have working local slices, including attendance audit history,
+transactional rule processing, an Action Inbox, and scoped student timelines. Milestone 6
+now includes guardian-message drafts, revision history, and exact-revision approval.
+Notification records, the delivery worker, and n8n/Mailpit delivery remain upcoming work.
+The public pages and dashboard now share a consistent visual system with separate student and academic workflows.
 The repository was empty when inspected:
 
 - No existing application source files.
@@ -124,8 +128,9 @@ Local checks completed:
 
 - [x] Build today's sections and attendance roster UI.
 - [x] Implement draft save, finalize, correction, and summaries.
-- [x] Handle missing marks, duplicate finalize requests, school-local date defaults, and historical rosters.
-- [ ] Create audit entries and transactional outbox events on meaningful transitions.
+- [x] Handle missing marks, duplicate finalize requests, and backend school-local date defaults.
+- [x] Derive rosters from enrollment dates (current status still applies; no immutable snapshot).
+- [x] Create audit entries and transactional outbox events on meaningful transitions.
 
 Completed slice:
 
@@ -148,15 +153,16 @@ Local checks completed:
 
 ### Milestone 5: Rule, Action Inbox, And Timeline
 
-- [ ] Implement the supported repeated-absence rule and settings.
-- [ ] Create/update Action Items with evidence and ownership.
-- [ ] Add open/in-progress/resolved/dismissed lifecycle and resolution reasons.
-- [ ] Add student timeline and role-dependent visibility.
-- [ ] Recompute evidence after corrections without erasing history.
+- [x] Implement the supported repeated-absence rule and settings.
+- [x] Create/update Action Items with evidence and ownership.
+- [x] Add open/in-progress/resolved/dismissed lifecycle and resolution reasons.
+- [x] Add student timeline and role-dependent visibility.
+- [x] Recompute evidence after corrections without erasing history.
 
 ### Milestone 6: Messages, Worker, And n8n
 
-- [ ] Build editable template drafts, revision-bound approval, and notification records.
+- [x] Build editable template drafts, staff-only revision history, and revision-bound approval.
+- [ ] Add notification records tied to the approved revision.
 - [ ] Implement outbox worker with leases/retries and observable failures.
 - [ ] Export credential-free n8n workflow JSON plus import/configuration instructions.
 - [ ] Add in-app notifications and delivery status UI.
@@ -164,7 +170,7 @@ Local checks completed:
 ### Milestone 7: MVP Polish And Verification
 
 - [x] Add landing, login, and dashboard shell structure with side navigation and tabs.
-- [ ] Build role-specific navigation and school overview with real aggregates.
+- [x] Build role-specific navigation and school overview with real aggregates.
 - [ ] Add loading, empty, validation, forbidden, and error states.
 - [ ] Check keyboard access, labels, responsive layout, and accessible status colors.
 - [ ] Add one browser E2E demo covering the primary journey.
@@ -181,7 +187,108 @@ Local checks completed:
 
 ## Next Implementation Step
 
-Move into Milestone 4 after optional browser E2E coverage:
+Continue Milestone 6 with notification records, a leased/retrying delivery worker, local
+n8n/Mailpit delivery, and delivery status. Dispatch must revalidate the exact approved
+revision, current recipient permission, evidence, and staff authorization.
 
-- Add a browser E2E demo for the admin setup and student profile workflow.
-- Start the attendance vertical slice once the remaining directory polish is acceptable.
+### Guardian Message Review: 2026-10-16
+
+- Added migration `0008_message_review` with tenant-linked drafts, revision snapshots,
+  and unique exact-revision approval records.
+- Added deterministic templates using only student, guardian, school, and absence-date
+  fields. Internal notes and closing reasons are never copied into templates.
+- Added a Messages tab inside follow-up review with eligible contacts, editable content,
+  explicit save/approve controls, history pagination, and unsaved-change close protection.
+- Current ownership, active assignments, recipient permission/contact, action revision,
+  and persisted text are checked on approval. Meaningful edits invalidate approval.
+- Drafts and approvals write redacted audit and staff-only timeline entries transactionally.
+- No notifications, delivery jobs, external automation calls, or emails are created.
+- Local verification: 63 backend tests passed against PostgreSQL, including concurrent
+  approval/edit and unsafe-recipient regression cases. All 62 frontend unit tests and
+  all 8 desktop/mobile Playwright scenarios
+  passed. Browser coverage includes draft creation, edits, exact-revision approval, history,
+  reopen/persistence, unsaved-change protection, and invalidation after action closure.
+  Screenshots were inspected for desktop/mobile layout. Backend/frontend lint, production
+  Docker builds, and TypeScript passed. PostgreSQL is at `0008_message_review` and
+  `alembic check` found no schema drift. CI includes PostgreSQL communication tests;
+  remote CI has not been run.
+
+See [message review](communication.md) for the API contract and remaining limits.
+
+### Action Inbox And Student Timeline: 2026-10-16
+
+- Added migration `0007_actions_timeline` with attendance policies, action items, and scoped
+  timeline entries. One active action per student/rule is enforced by a partial unique index.
+- Implemented distinct-date, inclusive-window rules; correction-aware evidence; closed-date
+  suppression; eligible teacher ownership; revision-checked edits; and closing reasons.
+- Added `/dashboard/actions` with server-side filters/search, paginated records, action review,
+  keyboard tabs, teacher claiming, admin policy settings, and a scoped student timeline.
+- Added timelines to student profiles. Guardians receive only guardian-visible attendance
+  entries through the API, never internal action/evidence/reason data.
+- Rule processing runs transactionally for new finalized/corrected attendance. A catch-up
+  command handles older queued events and returned zero on a second run after processing nine.
+- Added an opt-in local teacher seed for already-onboarded demo schools without resetting
+  passwords or existing memberships. Verified the documented teacher credentials locally.
+- At completion of this slice, message review and delivery were not implemented. Draft
+  review is now covered by the Milestone 6 slice above. Notification delivery, a background
+  delivery worker, and a dedicated guardian timeline screen remain pending.
+
+Verification completed locally:
+
+- All 43 backend tests passed in the Compose test profile; attendance, action, and demo-seed
+  fixtures used isolated PostgreSQL schemas. Rule boundary, correction, privacy, rollback,
+  duplicate-event, and concurrent-finalization cases passed.
+- All 51 frontend unit tests passed. Frontend/backend lint, production Docker build, and
+  TypeScript checks passed.
+- All 8 desktop/mobile Playwright scenarios passed with no skips. The teacher journey
+  covers finalized attendance, owned action creation, timeline, progress, and resolution.
+- Fixed mobile table-heading overflow found during browser testing and strengthened viewport
+  assertions. Inspected populated inbox, review, and timeline screenshots after the fix.
+- PostgreSQL is at `0007_actions_timeline`; `alembic check` reports no schema drift.
+- Existing app services remain running. Synthetic browser fixtures, including the timed-out
+  test fixture, were closed/deactivated without deleting history or changing other registers.
+- CI PostgreSQL selection includes attendance and action tests; remote CI has not been run.
+
+### Attendance History And Outbox: 2026-10-16
+
+- Added migration `0006_attendance_audit_outbox`, staff-scoped paginated history, and a
+  keyboard-accessible History tab with loading, empty, retry, and pagination states.
+- Meaningful drafts record redacted audit changes; finalize/correct also enqueue versioned,
+  minimal-payload events in the same transaction. Unchanged requests do not duplicate work.
+- Section-row locks serialize PostgreSQL attendance mutations; unique event keys protect
+  duplicate finalization. Audit ORM updates/deletes are rejected at application level.
+- Correction reasons are explicit and retained in history; free-text note contents are not.
+- Section summaries update immediately after writes, and the date picker defaults to the
+  school's timezone instead of UTC, including midnight-boundary regression coverage.
+- Added isolated PostgreSQL test schemas, a Compose test profile, and CI PostgreSQL/migration
+  checks. Full cross-module PostgreSQL fixtures remain future work.
+- At completion of this slice, historical entries were not backfilled and events stayed
+  pending. The Milestone 5 slice above now processes attendance events; message delivery
+  remains pending. See `docs/attendance.md` for the current contract and limitations.
+
+Verification completed locally:
+
+- Backend lint passed; Compose test profile passed all 26 backend tests, with attendance
+  running on PostgreSQL and concurrent creation/finalization/correction coverage.
+- Frontend lint passed; all 39 unit tests passed; production Docker build and TypeScript
+  checks passed.
+- All 6 desktop/mobile Playwright scenarios passed against the rebuilt stack. Inspected
+  populated correction-history screenshots and checked horizontal overflow.
+- PostgreSQL is at `0006_attendance_audit_outbox`; `alembic check` reports no schema drift.
+- Existing local app services remain running. Only dedicated browser-test fixtures were
+  deactivated; existing registers were not overwritten. CI checks are configured, not yet
+  verified on a remote runner.
+
+### Interface Organization: 2026-10-15
+
+- Replaced the active layered styles with shared base, workspace, and public style sheets.
+- Added a light sidebar, compact header, Lucide icons, responsive mobile navigation, and keyboard handling.
+- Separated Students from Academics; creation dialogs keep routine directory browsing focused on records.
+- Added API-backed student counts, roster completion, section progress, and a scoped overview for guardians.
+- Reworked landing/login/signup pages and removed invented attendance/student/follow-up totals.
+- Added Playwright checks using the running local API and installed Chrome for desktop and mobile.
+- Added regression coverage for overview aggregates, empty rosters, guardian scope, and teacher navigation.
+- The full setup-to-approved-message E2E journey remains pending Milestone 6.
+- Replaced the form-first academic screen with searchable, paginated lists for sections,
+  academic years, grade levels, subjects, and teaching assignments. Row editors load the
+  selected record and retain entered values after save failures.

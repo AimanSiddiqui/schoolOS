@@ -1439,8 +1439,8 @@ button.record-row {
   margin: 26px 0;
 }
 
-.side-nav button,
-.dashboard-tabs button {
+.side-nav a,
+.dashboard-tabs a {
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
@@ -1448,9 +1448,10 @@ button.record-row {
   cursor: pointer;
   font: inherit;
   text-align: left;
+  text-decoration: none;
 }
 
-.side-nav button {
+.side-nav a {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   gap: 10px;
@@ -1475,22 +1476,22 @@ button.record-row {
   gap: 4px;
 }
 
-.side-nav button.active {
+.side-nav a.active {
   border-color: rgb(255 255 255 / 18%);
   background: rgb(255 255 255 / 13%);
   box-shadow: inset 4px 0 0 #4fd1a1;
 }
 
-.side-nav button.active .nav-icon {
+.side-nav a.active .nav-icon {
   background: #4fd1a1;
   color: #08251b;
 }
 
-.side-nav button:hover {
+.side-nav a:hover {
   background: rgb(255 255 255 / 9%);
 }
 
-.dashboard-tabs button.active {
+.dashboard-tabs a.active {
   border-color: var(--accent);
   background: var(--surface-muted);
   color: var(--accent-dark);
@@ -1565,13 +1566,81 @@ button.record-row {
   padding-bottom: 12px;
 }
 
-.dashboard-tabs button {
+.dashboard-tabs a {
   padding: 10px 14px;
   font-weight: 800;
 }
 
 .dashboard-content {
   min-height: 420px;
+}
+
+.session-state {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  padding: 32px 0;
+}
+
+.dashboard-module {
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.dashboard-module:hover {
+  border-color: var(--accent);
+}
+
+.dashboard-module h3 {
+  margin: 8px 0;
+  font-size: 1.25rem;
+}
+
+.dashboard-module p {
+  line-height: 1.5;
+}
+
+.dashboard-module span {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.account-details {
+  max-width: 720px;
+}
+
+.account-details h2 {
+  margin: 24px 0 12px;
+  font-size: 1.15rem;
+}
+
+.account-details dl {
+  margin: 0;
+}
+
+.account-details dl > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr);
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+
+.account-details dt {
+  color: var(--muted);
+}
+
+.account-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.side-nav a:focus-visible,
+.dashboard-tabs a:focus-visible,
+.dashboard-module:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .dashboard-overview {
@@ -1730,6 +1799,7 @@ button.record-row {
   .landing-module-grid,
   .landing-proof,
   .auth-portal,
+  .signup-portal,
   .auth-form-row,
   .dashboard-shell,
   .overview-hero-panel,

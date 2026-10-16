@@ -1,6 +1,9 @@
 "use client";
 
+import { ArrowLeft, ArrowUpRight, Plus, RefreshCw, UsersRound } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { StudentTimeline } from "./student-timeline";
+import { WorkspaceDialog } from "./workspace-dialog";
 
 type SessionPayload = {
   authenticated: boolean;
@@ -45,7 +48,7 @@ type TeacherAssignment = {
   status: string;
 };
 
-type SetupPayload = {
+export type SetupPayload = {
   academic_years: AcademicYear[];
   grade_levels: GradeLevel[];
   sections: Section[];
@@ -91,7 +94,7 @@ type Guardian = {
   phone: string | null;
 };
 
-type TeacherUser = {
+export type TeacherUser = {
   id: string;
   display_name: string;
   email: string;
@@ -166,7 +169,34 @@ function submitIntent(event: FormEvent<HTMLFormElement>): string {
   return submitter?.value ?? "update";
 }
 
-export function SchoolSetupWorkspace() {
+function CreationPanel({
+  modal,
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  modal: boolean;
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  if (!modal) return children;
+  return open ? (
+    <WorkspaceDialog title={title} onClose={onClose}>
+      {children}
+    </WorkspaceDialog>
+  ) : null;
+}
+
+export function SchoolSetupWorkspace({
+  area,
+  initialQuery = "",
+}: {
+  area?: "students" | "academics";
+  initialQuery?: string;
+} = {}) {
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [setup, setSetup] = useState<SetupPayload>(emptySetup);
   const [teachers, setTeachers] = useState<TeacherUser[]>([]);
@@ -175,7 +205,11 @@ export function SchoolSetupWorkspace() {
   const [latestStudent, setLatestStudent] = useState<Student | null>(null);
   const [latestGuardian, setLatestGuardian] = useState<Guardian | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [activeView, setActiveView] = useState<WorkspaceView>("overview");
+  const [activeView, setActiveView] = useState<WorkspaceView>(
+    area === "students" ? "directory" : area === "academics" ? "academics" : "overview",
+  );
+  const [creation, setCreation] = useState<"student" | "guardian" | "enrollment" | null>(null);
+  const [academicEntity, setAcademicEntity] = useState("year");
   const [message, setMessage] = useState("Setup not loaded.");
   const [busy, setBusy] = useState(false);
 
@@ -227,14 +261,14 @@ export function SchoolSetupWorkspace() {
       setSetup(setupPayload);
       setTeachers(teacherPayload);
       setGuardians(guardianPayload);
-      await loadStudents();
+      await loadStudents(initialQuery ? `?${new URLSearchParams({ q: initialQuery })}` : "");
       setMessage("Setup loaded.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to load setup.");
     } finally {
       setBusy(false);
     }
-  }, [loadStudents]);
+  }, [loadStudents, initialQuery]);
 
   useEffect(() => {
     loadSetup();
@@ -582,36 +616,118 @@ export function SchoolSetupWorkspace() {
   }
 
   return (
-    <section className="setup-workspace" aria-labelledby="setup-heading">
+    <section
+      className={`setup-workspace ${area ? `area-${area}` : ""}`}
+      aria-label={area === "students" ? "Student records" : "Academic workspace"}
+    >
       <div className="setup-header">
-        <div>
-          <p className="eyebrow">Milestone 3</p>
-          <h2 id="setup-heading">Academics and Directory</h2>
+        <p className="muted">
+          {area === "students"
+            ? "Student records, guardian relationships, and enrollments."
+            : "Academic years, classes, subjects, and teacher assignments."}
+        </p>
+        <div className="button-row">
+          {area === "students" ? (
+            <>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setActiveView("directory");
+                  setCreation("guardian");
+                }}
+                disabled={!isAdmin}
+              >
+                <Plus size={16} />
+                Guardian
+              </button>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setActiveView("directory");
+                  setCreation("enrollment");
+                }}
+                disabled={!isAdmin}
+              >
+                <Plus size={16} />
+                Enrollment
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => {
+                  setActiveView("directory");
+                  setCreation("student");
+                }}
+                disabled={!isAdmin}
+              >
+                <Plus size={16} />
+                Add student
+              </button>
+            </>
+          ) : null}
+          <button
+            className="icon-button"
+            type="button"
+            onClick={loadSetup}
+            disabled={busy}
+            aria-label="Refresh"
+            title="Refresh"
+          >
+            <RefreshCw size={17} />
+          </button>
         </div>
-        <button className="icon-button" type="button" onClick={loadSetup} disabled={busy}>
-          Refresh
-        </button>
       </div>
 
-      <div className="setup-status" aria-live="polite">
+      <div
+        className={`setup-status ${area && message === "Setup loaded." ? "sr-only" : ""}`}
+        aria-live="polite"
+      >
         <p className="muted">{message}</p>
-        {session?.current_school ? (
+        {!area && session?.current_school ? (
           <p className="context-value">{session.current_school.name}</p>
         ) : null}
       </div>
 
-      <nav className="workspace-tabs" aria-label="SchoolOS sections">
-        {workspaceTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={activeView === tab.id ? "active" : ""}
-            onClick={() => setActiveView(tab.id)}
-          >
-            {tab.label}
+      {area === "students" ? (
+        activeView === "profile" ? (
+          <button className="text-link" type="button" onClick={() => setActiveView("directory")}>
+            <ArrowLeft size={16} />
+            All students
           </button>
-        ))}
-      </nav>
+        ) : null
+      ) : (
+        <nav className="workspace-tabs" aria-label="SchoolOS sections">
+          {(area === "academics"
+            ? workspaceTabs.filter((tab) => ["academics", "maintenance"].includes(tab.id))
+            : workspaceTabs
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={activeView === tab.id ? "active" : ""}
+              onClick={() => setActiveView(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      )}
+      {area === "academics" && activeView === "academics" ? (
+        <label className="entity-picker">
+          Record type
+          <select
+            value={academicEntity}
+            onChange={(event) => setAcademicEntity(event.target.value)}
+          >
+            <option value="year">Academic year</option>
+            <option value="level">Grade level</option>
+            <option value="section">Section</option>
+            <option value="subject">Subject & teacher assignment</option>
+          </select>
+        </label>
+      ) : null}
 
       {activeView === "overview" ? (
         <div className="overview-grid">
@@ -640,7 +756,7 @@ export function SchoolSetupWorkspace() {
 
       <div className="setup-grid" aria-disabled={!isAdmin}>
         <section
-          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          className={`panel setup-panel view-panel ${activeView === "academics" && (area !== "academics" || academicEntity === "year") ? "active" : ""}`}
           aria-labelledby="year-heading"
         >
           <h3 id="year-heading">Academic Year</h3>
@@ -664,7 +780,7 @@ export function SchoolSetupWorkspace() {
         </section>
 
         <section
-          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          className={`panel setup-panel view-panel ${activeView === "academics" && (area !== "academics" || academicEntity === "level") ? "active" : ""}`}
           aria-labelledby="level-heading"
         >
           <h3 id="level-heading">Grade Level</h3>
@@ -684,7 +800,7 @@ export function SchoolSetupWorkspace() {
         </section>
 
         <section
-          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          className={`panel setup-panel view-panel ${activeView === "academics" && (area !== "academics" || academicEntity === "section") ? "active" : ""}`}
           aria-labelledby="section-heading"
         >
           <h3 id="section-heading">Section</h3>
@@ -720,7 +836,7 @@ export function SchoolSetupWorkspace() {
         </section>
 
         <section
-          className={`panel setup-panel view-panel ${activeView === "academics" ? "active" : ""}`}
+          className={`panel setup-panel view-panel ${activeView === "academics" && (area !== "academics" || academicEntity === "subject") ? "active" : ""}`}
           aria-labelledby="subject-heading"
         >
           <h3 id="subject-heading">Subject</h3>
@@ -1067,131 +1183,162 @@ export function SchoolSetupWorkspace() {
           </form>
         </section>
 
-        <section
-          className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
-          aria-labelledby="student-heading"
+        <CreationPanel
+          modal={area === "students"}
+          open={creation === "student"}
+          title="Add student"
+          onClose={() => setCreation(null)}
         >
-          <h3 id="student-heading">Student</h3>
-          <form className="form-grid" onSubmit={createStudent}>
-            <label>
-              Number
-              <input name="student_number" defaultValue="S-001" required />
-            </label>
-            <label>
-              Given name
-              <input name="given_name" defaultValue="Sara" required />
-            </label>
-            <label>
-              Family name
-              <input name="family_name" defaultValue="Stone" required />
-            </label>
-            <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
-              Save student
-            </button>
-          </form>
-        </section>
+          <section
+            className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
+            aria-labelledby="student-heading"
+          >
+            <h3 id="student-heading">Student</h3>
+            <form className="form-grid" onSubmit={createStudent}>
+              <label>
+                Number
+                <input
+                  name="student_number"
+                  defaultValue={area ? "" : "S-001"}
+                  placeholder="Student ID"
+                  required
+                />
+              </label>
+              <label>
+                Given name
+                <input name="given_name" defaultValue={area ? "" : "Sara"} required />
+              </label>
+              <label>
+                Family name
+                <input name="family_name" defaultValue={area ? "" : "Stone"} required />
+              </label>
+              <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
+                Save student
+              </button>
+            </form>
+          </section>
+        </CreationPanel>
 
-        <section
-          className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
-          aria-labelledby="guardian-heading"
+        <CreationPanel
+          modal={area === "students"}
+          open={creation === "guardian"}
+          title="Guardian details"
+          onClose={() => setCreation(null)}
         >
-          <h3 id="guardian-heading">Guardian</h3>
-          <form className="form-grid" onSubmit={createGuardian}>
-            <label>
-              Name
-              <input name="display_name" defaultValue="Nadia Stone" required />
-            </label>
-            <label>
-              Email
-              <input name="email" type="email" defaultValue="nadia@example.test" required />
-            </label>
-            <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
-              Save guardian
-            </button>
-          </form>
+          <section
+            className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
+            aria-labelledby="guardian-heading"
+          >
+            <h3 id="guardian-heading">Guardian</h3>
+            <form className="form-grid" onSubmit={createGuardian}>
+              <label>
+                Name
+                <input name="display_name" defaultValue={area ? "" : "Nadia Stone"} required />
+              </label>
+              <label>
+                Email
+                <input
+                  name="email"
+                  type="email"
+                  defaultValue={area ? "" : "nadia@example.test"}
+                  required
+                />
+              </label>
+              <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
+                Save guardian
+              </button>
+            </form>
 
-          <form className="form-grid compact-form" onSubmit={linkGuardian}>
-            <label>
-              Student
-              <select
-                name="student_id"
-                required
-                defaultValue={latestStudent?.id ?? firstId(students)}
-              >
-                {students.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {studentName(student)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Guardian
-              <select
-                name="guardian_id"
-                required
-                defaultValue={latestGuardian?.id ?? firstId(guardians)}
-              >
-                {guardians.map((guardian) => (
-                  <option key={guardian.id} value={guardian.id}>
-                    {guardian.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Relationship
-              <input name="relationship" defaultValue="Mother" required />
-            </label>
-            <label className="checkbox-row">
-              <input name="portal_access" type="checkbox" defaultChecked />
-              Portal access
-            </label>
-            <button className="secondary-button" type="submit" disabled={busy || !isAdmin}>
-              Link
-            </button>
-          </form>
-        </section>
+            <form className="form-grid compact-form" onSubmit={linkGuardian}>
+              <label>
+                Student
+                <select
+                  name="student_id"
+                  required
+                  defaultValue={latestStudent?.id ?? firstId(students)}
+                >
+                  {students.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {studentName(student)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Guardian
+                <select
+                  name="guardian_id"
+                  required
+                  defaultValue={latestGuardian?.id ?? firstId(guardians)}
+                >
+                  {guardians.map((guardian) => (
+                    <option key={guardian.id} value={guardian.id}>
+                      {guardian.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Relationship
+                <input name="relationship" defaultValue="Mother" required />
+              </label>
+              <label className="checkbox-row">
+                <input name="portal_access" type="checkbox" defaultChecked />
+                Portal access
+              </label>
+              <button className="secondary-button" type="submit" disabled={busy || !isAdmin}>
+                Link
+              </button>
+            </form>
+          </section>
+        </CreationPanel>
 
-        <section
-          className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
-          aria-labelledby="enrollment-heading"
+        <CreationPanel
+          modal={area === "students"}
+          open={creation === "enrollment"}
+          title="Add enrollment"
+          onClose={() => setCreation(null)}
         >
-          <h3 id="enrollment-heading">Enrollment</h3>
-          <form className="form-grid" onSubmit={createEnrollment}>
-            <label>
-              Student
-              <select
-                name="student_id"
-                required
-                defaultValue={latestStudent?.id ?? firstId(students)}
-              >
-                {students.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {studentName(student)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Section
-              <select name="section_id" required defaultValue={firstSectionId}>
-                {setup.sections.map((section) => (
-                  <option key={section.id} value={section.id}>
-                    {section.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Starts
-              <input name="starts_on" type="date" defaultValue="2026-09-01" required />
-            </label>
-            <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
-              Save enrollment
-            </button>
-          </form>
-        </section>
+          <section
+            className={`panel setup-panel view-panel ${activeView === "directory" ? "active" : ""}`}
+            aria-labelledby="enrollment-heading"
+          >
+            <h3 id="enrollment-heading">Enrollment</h3>
+            <form className="form-grid" onSubmit={createEnrollment}>
+              <label>
+                Student
+                <select
+                  name="student_id"
+                  required
+                  defaultValue={latestStudent?.id ?? firstId(students)}
+                >
+                  {students.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {studentName(student)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Section
+                <select name="section_id" required defaultValue={firstSectionId}>
+                  {setup.sections.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Starts
+                <input name="starts_on" type="date" defaultValue="2026-09-01" required />
+              </label>
+              <button className="primary-button" type="submit" disabled={busy || !isAdmin}>
+                Save enrollment
+              </button>
+            </form>
+          </section>
+        </CreationPanel>
 
         <section
           className={`panel setup-panel directory-panel view-panel ${
@@ -1203,7 +1350,7 @@ export function SchoolSetupWorkspace() {
           <form className="directory-filter" onSubmit={filterStudents}>
             <label>
               Search
-              <input name="q" placeholder="Name or number" />
+              <input name="q" placeholder="Search name or student ID" defaultValue={initialQuery} />
             </label>
             <label>
               Status
@@ -1240,6 +1387,15 @@ export function SchoolSetupWorkspace() {
             </button>
           </form>
 
+          {area === "students" ? (
+            <div className="directory-table-head">
+              <span>Student</span>
+              <span>Student ID</span>
+              <span>Section</span>
+              <span>Status</span>
+              <span />
+            </div>
+          ) : null}
           <div className="record-list">
             {students.map((student) => (
               <button
@@ -1248,16 +1404,43 @@ export function SchoolSetupWorkspace() {
                   selectedStudent?.id === student.id ? "selected" : ""
                 }`}
                 type="button"
-                onClick={() => setSelectedStudentId(student.id)}
+                onClick={() => {
+                  setSelectedStudentId(student.id);
+                  if (area === "students") setActiveView("profile");
+                }}
               >
+                {area === "students" ? (
+                  <span className="avatar student-avatar">
+                    {student.given_name[0]}
+                    {student.family_name[0]}
+                  </span>
+                ) : null}
                 <div>
                   <strong>{studentName(student)}</strong>
-                  <p className="muted">{student.student_number}</p>
+                  {area !== "students" ? <p className="muted">{student.student_number}</p> : null}
                 </div>
-                <span>{student.status}</span>
+                {area === "students" ? (
+                  <>
+                    <span>{student.student_number}</span>
+                    <span>
+                      {student.enrollments.find((enrollment) => enrollment.status === "ACTIVE")
+                        ?.section_label ?? "Not enrolled"}
+                    </span>
+                  </>
+                ) : null}
+                <span className={`status-pill ${student.status === "ACTIVE" ? "positive" : ""}`}>
+                  {student.status}
+                </span>
+                {area === "students" ? <ArrowUpRight size={16} /> : null}
               </button>
             ))}
           </div>
+          {!students.length ? (
+            <div className="empty-state">
+              <UsersRound size={28} />
+              <p>No students match your search.</p>
+            </div>
+          ) : null}
         </section>
 
         <section
@@ -1357,6 +1540,10 @@ export function SchoolSetupWorkspace() {
                   )}
                 </div>
               </div>
+
+              {activeView === "profile" ? (
+                <StudentTimeline key={selectedStudent.id} studentId={selectedStudent.id} />
+              ) : null}
 
               {selectedStudent.enrollments[0] ? (
                 <form

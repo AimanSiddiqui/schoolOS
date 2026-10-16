@@ -6,7 +6,7 @@ type FetchCall = Parameters<typeof fetch>;
 
 const adminSession = {
   authenticated: true,
-  current_school: { id: "school-demo", name: "Local Demo School" },
+  current_school: { id: "school-demo", name: "Local Demo School", timezone: "Europe/Berlin" },
   current_role: "ADMIN",
 };
 
@@ -119,6 +119,9 @@ describe("AttendanceWorkspace", () => {
 
     expect(await screen.findByText("Attendance loaded.")).toBeInTheDocument();
     expect(screen.getByText("Sara Stone")).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/backend/auth/session"),
+    ).toHaveLength(1);
 
     fireEvent.change(screen.getByLabelText("Mark"), { target: { value: "PRESENT" } });
     fireEvent.click(screen.getByRole("button", { name: "Save Draft" }));
@@ -126,6 +129,7 @@ describe("AttendanceWorkspace", () => {
     await waitFor(() => {
       expect(screen.getByText("Draft saved.")).toBeInTheDocument();
     });
+    expect(screen.getByLabelText("Mark")).toHaveValue("PRESENT");
     const draftCall = fetchMock.mock.calls.find(([url]) =>
       String(url).startsWith("/api/backend/attendance/sections/section-1/draft?"),
     );
@@ -138,6 +142,7 @@ describe("AttendanceWorkspace", () => {
     await waitFor(() => {
       expect(screen.getByText("Attendance finalized.")).toBeInTheDocument();
     });
+    expect(screen.getByRole("button", { name: /1A\s*FINAL/ })).toHaveTextContent("1/1");
   });
 
   it("requires an admin or teacher school context", async () => {
@@ -153,5 +158,60 @@ describe("AttendanceWorkspace", () => {
     expect(
       await screen.findByText("Admin or teacher school context required."),
     ).toBeInTheDocument();
+  });
+
+  it("switches to history with the keyboard and requires a correction reason", async () => {
+    const fetchMock = mockFetch((url, init) => {
+      if (url === "/api/backend/auth/session") return jsonResponse(adminSession);
+      if (url.startsWith("/api/backend/attendance/sections?"))
+        return jsonResponse([sectionSummary]);
+      if (url.includes("/history?")) return jsonResponse({ entries: [], has_more: false });
+      if (url.includes("/records/record-1") && init?.method === "PATCH")
+        return jsonResponse(finalPayload);
+      if (url.startsWith("/api/backend/attendance/sections/section-1?"))
+        return jsonResponse(finalPayload);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    render(<AttendanceWorkspace />);
+    await screen.findByText("Attendance loaded.");
+    expect(screen.getByRole("button", { name: "Correct" })).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Register" }), { key: "ArrowRight" });
+    expect(await screen.findByText("No changes recorded for this register.")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "History" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("tab", { name: "Register" }));
+    fireEvent.change(screen.getByLabelText("Mark"), { target: { value: "EXCUSED" } });
+    fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "   " } });
+    expect(screen.getByRole("button", { name: "Correct" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Guardian confirmed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Correct" }));
+    await screen.findByText("Correction saved.");
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes("/records/record-1"));
+    expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({
+      mark: "EXCUSED",
+      reason: "Guardian confirmed",
+    });
+  });
+
+  it("defaults to the school's local date across a UTC day boundary", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-08T23:30:00Z"));
+    try {
+      const fetchMock = mockFetch((url) => {
+        if (url === "/api/backend/auth/session") return jsonResponse(adminSession);
+        if (url.startsWith("/api/backend/attendance/sections?"))
+          return jsonResponse([sectionSummary]);
+        if (url.startsWith("/api/backend/attendance/sections/section-1?"))
+          return jsonResponse(rosterPayload);
+        throw new Error(`Unexpected request: ${url}`);
+      });
+      render(<AttendanceWorkspace />);
+      await screen.findByText("Attendance loaded.");
+      expect(screen.getByLabelText("School date")).toHaveValue("2026-10-09");
+      expect(
+        fetchMock.mock.calls.some(([url]) => String(url).includes("school_date=2026-10-09")),
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

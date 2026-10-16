@@ -74,10 +74,15 @@ erDiagram
 
 ### Communication And Delivery
 
-- `MessageDraft`: recipient, channel, content, author, revision, approval status, and approval metadata.
-- `Notification`: requested delivery for an approved draft and exact revision.
-- `DeliveryAttempt`: attempt status, timestamps, provider reference when available, and error details safe for logs.
-- `OutboxEvent`: durable event envelope with retry and lease state.
+- `MessageDraft`: one email draft per action/guardian link, recipient snapshot, content, author,
+  current revision, evidence revision, and optional current approval revision.
+- `MessageRevision`: append-only snapshot of the exact content, recipient, and action revision.
+- `MessageApproval`: append-only approver and timestamp for one exact message revision.
+- `Notification` (planned): requested delivery for an approved draft and exact revision.
+- `DeliveryAttempt` (planned): attempt status, timestamps, provider reference when available,
+  and error details safe for logs.
+- `OutboxEvent`: durable, versioned event envelope with tenant scope and a unique idempotency
+  key. Retry and lease state will be added with the Milestone 6 worker.
 
 ### Audit
 
@@ -175,4 +180,3 @@ Contracts will be refined before each implementation milestone. Initial route gr
 - `/api/v1/timeline/*`: student timeline with role-aware filtering.
 - `/api/v1/communication/*`: drafts, approvals, notifications, delivery status.
 - `/api/v1/integrations/n8n/*`: narrow authenticated workflow endpoints.
-

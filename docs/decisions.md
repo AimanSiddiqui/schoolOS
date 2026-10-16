@@ -38,9 +38,10 @@ Consequences:
 
 ## ADR-0004: Attendance Finalization Emits Transactional Events
 
-Status: Proposed
+Status: Accepted
 
-Finalizing attendance should write attendance state, audit records, and outbox events in the same database transaction.
+Finalization and corrections write attendance state, audit records, and outbox events in
+the same database transaction. Meaningful draft saves write only audit history.
 
 Consequences:
 
@@ -48,11 +49,17 @@ Consequences:
 - Duplicate finalization must not duplicate events.
 - The worker and rule processor must be idempotent.
 
-This decision will be revisited during Milestone 4 when the exact persistence model is implemented.
+PostgreSQL section-row locks serialize all register mutations, including creation; a unique
+school/idempotency key protects the finalization event. Notes and correction reasons are
+excluded from event payloads. Audit changes omit note contents, retain correction reasons
+for authorized staff, and have application-level append-only guards. Details and limitations
+are recorded in [attendance history and events](attendance.md). Delivery-worker retry/lease
+state remains Milestone 6. Attendance rule consumption is now implemented
+as described in ADR-0008.
 
 ## ADR-0005: Guardian Communication Requires Revision-Bound Approval
 
-Status: Proposed
+Status: Accepted
 
 Guardian messages should start as editable drafts. Approval must reference the exact draft revision, and editing an approved draft invalidates that approval.
 
@@ -62,7 +69,16 @@ Consequences:
 - Only approved revisions can be dispatched.
 - Notification records should reference the approved revision used for delivery.
 
-This decision will be finalized during Milestone 6.
+Drafts, immutable revision snapshots, and approval records are implemented in migration
+`0008_message_review`. Meaningful edits increment the revision and clear its current approval.
+Approval rechecks the active follow-up, current attendance evidence revision, recipient
+permission/contact, and staff authorization. History and approval writes are transactional.
+Audit/timeline records omit message content and contact addresses. Full message snapshots
+are staff-only. ORM append-only guards are application-level, not SQL tamper resistance.
+
+Notification records and dispatch remain future work. Approval creates no delivery work.
+The eventual worker must revalidate approval before dispatch, not trust a historical stamp.
+See [message review](communication.md).
 
 ## ADR-0006: Use Biome For Frontend Linting And Formatting
 
@@ -102,3 +118,23 @@ Consequences:
 - Passwords are hashed with `pwdlib[argon2]`.
 - Current CSRF stance is documented but not complete for production; Milestone 2 is local-only.
 - Every protected endpoint must derive the user and selected school from the session, not from client trust.
+
+## ADR-0008: Transactional Local Rule Processing
+
+Status: Accepted For Local MVP
+
+Repeated-absence evaluation and student timeline generation run inside the attendance
+transaction for new events. A school-row lock serializes rules, policy changes, and action
+updates; a partial unique index ensures one active student/rule action. A tenant-scoped
+catch-up command handles older pending attendance events, while refreshed event status and
+timeline source keys prevent duplicate processing.
+
+Corrections change active evidence without erasing history or silently closing work.
+Closed evidence end dates suppress immediate recreation, and newer qualifying evidence can
+open a new action. Manual edits use optimistic revisions. Staff action history is never
+guardian-visible; guardian attendance entries exclude free-text notes and correction reasons.
+
+This favors a working, atomic local flow. It is not a substitute for Milestone 6 delivery
+leases, retries, and observable external failures. Scaling history scans and moving rule
+execution off the request path can follow once there is a concrete throughput need.
+Detailed semantics are in [actions and timeline](actions.md).

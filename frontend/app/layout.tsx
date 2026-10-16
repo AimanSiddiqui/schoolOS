@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "./styles/base.css";
+import "./styles/workspace.css";
+import "./styles/public.css";
 
 export const metadata: Metadata = {
   title: "SchoolOS",
-  description: "Local foundation for the SchoolOS MVP",
+  description: "A connected workspace for your school's people, records, and attendance.",
 };
 
 export default function RootLayout({
@@ -12,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

@@ -13,6 +13,8 @@ venv/
 out/
 *.tsbuildinfo
 npm-debug.log*
+test-results/
+playwright-report/
 
 # Local config and data
 .env

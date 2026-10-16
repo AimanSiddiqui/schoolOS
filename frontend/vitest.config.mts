@@ -7,5 +7,6 @@ export default defineConfig({
     globals: true,
     restoreMocks: true,
     pool: "threads",
+    exclude: ["e2e/**", "node_modules/**", ".next/**"],
   },
 });

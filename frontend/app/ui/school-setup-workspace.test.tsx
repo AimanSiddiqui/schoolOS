@@ -91,6 +91,9 @@ function jsonResponse(payload: unknown, status = 200): Response {
 function mockFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   const fetchMock = vi.fn((...args: FetchCall) => {
     const [input, init] = args;
+    if (String(input).includes("/timeline/students/")) {
+      return Promise.resolve(jsonResponse({ entries: [], has_more: false }));
+    }
     return Promise.resolve(handler(String(input), init));
   });
   vi.stubGlobal("fetch", fetchMock);

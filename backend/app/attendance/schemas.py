@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -25,6 +26,12 @@ class AttendanceRecordWrite(BaseModel):
 class AttendanceDraftSave(BaseModel):
     records: list[AttendanceRecordWrite] = Field(min_length=1)
 
+    @model_validator(mode="after")
+    def unique_students(self) -> "AttendanceDraftSave":
+        if len({record.student_id for record in self.records}) != len(self.records):
+            raise ValueError("Each student may appear only once in a draft")
+        return self
+
 
 class AttendanceCorrection(BaseModel):
     mark: str = Field(min_length=1, max_length=32)
@@ -39,7 +46,22 @@ class AttendanceCorrection(BaseModel):
         if self.note is not None:
             self.note = self.note.strip() or None
         self.reason = self.reason.strip()
+        if len(self.reason) < 3:
+            raise ValueError("A correction reason of at least 3 characters is required")
         return self
+
+
+class AttendanceHistoryEntry(BaseModel):
+    id: UUID
+    operation: str
+    actor_name: str | None
+    occurred_at: datetime
+    changes: dict[str, Any]
+
+
+class AttendanceHistoryPage(BaseModel):
+    entries: list[AttendanceHistoryEntry]
+    has_more: bool
 
 
 class AttendanceRosterRecord(BaseModel):

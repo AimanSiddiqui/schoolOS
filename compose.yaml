@@ -33,6 +33,17 @@ services:
       timeout: 5s
       retries: 5
 
+  backend-tests:
+    profiles: [test]
+    build:
+      context: ./backend
+      target: test
+    environment:
+      SCHOOLOS_TEST_DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://schoolos:schoolos_dev_password@db:5432/schoolos}
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend
